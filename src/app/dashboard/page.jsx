@@ -8,8 +8,8 @@ import {
   DATABASE_ID,
   COLUMNS_COLLECTION_ID,
   TASKS_COLLECTION_ID,
-  Query,
 } from "@/components/services/appwrite"
+import { Query } from "appwrite"; // ✅ Correct import 
 import LogoutButton from "@/components/dashboard/LogoutButton"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
