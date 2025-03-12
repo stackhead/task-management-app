@@ -287,7 +287,7 @@ export default function DashboardPage() {
       setIsColumnModalOpen(false)
     } catch (error) {
       console.error("Error saving column:", error)
-      alert("Failed to save column. Please try again.")
+      alert("The current user is not authorized to perform the requested action log in first.")
     }
   }
 

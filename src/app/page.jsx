@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { account } from "@/components/services/appwrite";
 import { useRouter } from "next/navigation";
+import LoginPage from "./auth/login/page";
 
 export default function HomePage() {
   const router = useRouter();
