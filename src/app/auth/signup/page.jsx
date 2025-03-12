@@ -23,7 +23,7 @@ export default function SignupPage() {
     e.preventDefault()
 
     if (!name || !email || !password) {
-      toast.error("Please fill in all fields")
+      toast.error("All fields are mendatory")
       return
     }
 
@@ -36,7 +36,7 @@ export default function SignupPage() {
 
     try {
       await account.create(ID.unique(), email, password, name)
-      toast.success("Account created successfully! Redirecting to login...")
+      toast.success("Account created successfully! Redirecting to login please wait...")
 
       // Short delay before redirect for better UX
       setTimeout(() => {
@@ -44,11 +44,12 @@ export default function SignupPage() {
       }, 1500)
     } catch (error) {
       console.error(error)
-      toast.error(error.message || "Failed to create account. Please try again.")
+      toast.error(error.message || "Failed to create account. Please try again.....")
     } finally {
       setIsLoading(false)
     }
   }
+  
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

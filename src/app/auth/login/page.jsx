@@ -26,10 +26,25 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
+     
 
     try {
+      // 🔹 First, check if the user already has an active session
+      const user = await account.get();
+      console.log("User already logged in:", user);
+      
+      toast.success("You're already logged in! Redirecting...");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
+      return; // Stop further execution
+    } catch (err) {
+      console.warn("No active session found, proceeding with login...");
+    }
+    try {
+     
       await account.createEmailPasswordSession(email, password)
-      toast.success("Login successful! Redirecting to dashboard...")
+      toast.success("Login successful! Redirecting to dashboard please wait...")
 
       // Short delay before redirect for better UX
       setTimeout(() => {
@@ -37,8 +52,17 @@ export default function LoginPage() {
       }, 1000)
     } catch (error) {
       console.error(error)
-      toast.error("No user found with the provided credentials")
-    } finally {
+
+
+      if (error.code === 429) {
+        toast.error("Too many login attempts. Please wait a few minutes before trying again.");
+      } else if (error.code === 401) {
+        toast.error("Incorrect email or password. Please try again.");
+      } else {
+        toast.error("Something went wrong. Please try again later.");
+      };
+    }
+       finally {
       setIsLoading(false)
     }
   }
@@ -103,7 +127,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-md font-medium text-gray-900">
                   Password
                 </label>
-                
+
               </div>
               <div className="relative">
                 <input
@@ -129,9 +153,8 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 ${
-                isLoading ? "opacity-75 cursor-not-allowed" : ""
-              }`}
+              className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 ${isLoading ? "opacity-75 cursor-not-allowed" : ""
+                }`}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -150,7 +173,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+            New on our platform ?{" "}
               <Link href="/auth/signup" className="font-medium text-gray-900 hover:text-gray-700 hover:underline">
                 Sign up
               </Link>
