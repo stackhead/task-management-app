@@ -8,8 +8,8 @@ import {
   DATABASE_ID,
   COLUMNS_COLLECTION_ID,
   TASKS_COLLECTION_ID,
+  Query,
 } from "@/components/services/appwrite"
-import { Query } from "appwrite"; // ✅ Correct import 
 import LogoutButton from "@/components/dashboard/LogoutButton"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
@@ -39,7 +39,7 @@ const PRIORITY_OPTIONS = [
 const Task = ({ task, onDelete, onEdit, moveTask }) => {
   const [{ isDragging }, drag] = useDrag({
     type: "TASK",
-    item: { id: task.id, sourceColumnId: task.status },
+    item: { id: task.$id, sourceColumnId: task.status },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
@@ -51,9 +51,8 @@ const Task = ({ task, onDelete, onEdit, moveTask }) => {
   return (
     <div
       ref={drag}
-      className={`p-3 mb-2 bg-gray-800 rounded-md shadow border border-gray-700 ${
-        isDragging ? "opacity-50" : "opacity-100"
-      }`}
+      className={`p-3 mb-2 bg-gray-800 rounded-md shadow border border-gray-700 ${isDragging ? "opacity-50" : "opacity-100"
+        }`}
       style={{ cursor: "move" }}
     >
       <div className="flex justify-between items-start mb-2">
@@ -62,7 +61,7 @@ const Task = ({ task, onDelete, onEdit, moveTask }) => {
           <button onClick={() => onEdit(task)} className="text-gray-400 hover:text-gray-200 cursor-pointer">
             <FiEdit2 size={14} />
           </button>
-          <button onClick={() => onDelete(task.id)} className="text-gray-400 hover:text-red-400 cursor-pointer">
+          <button onClick={() => onDelete(task.$id)} className="text-gray-400 hover:text-red-400 cursor-pointer">
             <FiTrash2 size={14} />
           </button>
         </div>
@@ -92,7 +91,7 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
   const [{ isOver }, drop] = useDrop({
     accept: "TASK",
     drop: (item) => {
-      moveTask(item.id, item.sourceColumnId, column.id)
+      moveTask(item.id, item.sourceColumnId, column.$id)
       return { moved: true }
     },
     collect: (monitor) => ({
@@ -101,7 +100,7 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
   })
 
   // Filter tasks that belong to this column
-  const columnTasks = tasks.filter((task) => task.status === column.id)
+  const columnTasks = tasks.filter((task) => task.status === column.$id)
 
   return (
     <div
@@ -115,7 +114,10 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
           <button onClick={() => onEditColumn(column)} className="text-gray-400 hover:text-gray-200 cursor-pointer">
             <FiEdit2 size={16} />
           </button>
-          <button onClick={() => onDeleteColumn(column.id)} className="text-gray-400 hover:text-red-400 cursor-pointer">
+          <button
+            onClick={() => onDeleteColumn(column.$id)}
+            className="text-gray-400 hover:text-red-400 cursor-pointer"
+          >
             <FiTrash2 size={16} />
           </button>
         </div>
@@ -130,13 +132,13 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
         }}
       >
         {columnTasks.map((task) => (
-          <Task key={task.id} task={task} onDelete={onDeleteTask} onEdit={onEditTask} moveTask={moveTask} />
+          <Task key={task.$id} task={task} onDelete={onDeleteTask} onEdit={onEditTask} moveTask={moveTask} />
         ))}
       </div>
 
       <div className="p-3 border-t border-gray-700">
         <button
-          onClick={() => onAddTask(column.id)}
+          onClick={() => onAddTask(column.$id)}
           className="w-full py-2 flex items-center justify-center text-sm text-gray-300 bg-gray-800 rounded hover:bg-gray-700 transition-colors cursor-pointer"
         >
           <FiPlus size={16} className="mr-1" /> Add Task
@@ -173,9 +175,8 @@ const ColorPicker = ({ selectedColor, onColorSelect }) => {
         <button
           key={color.id}
           type="button"
-          className={`w-6 h-6 rounded-full cursor-pointer ${
-            selectedColor === color.value ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900" : ""
-          }`}
+          className={`w-6 h-6 rounded-full cursor-pointer ${selectedColor === color.value ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900" : ""
+            }`}
           style={{ backgroundColor: color.value }}
           onClick={() => onColorSelect(color.value)}
         />
@@ -217,50 +218,6 @@ export default function DashboardPage() {
         setUser(loggedInUser)
 
         try {
-          // Check if database exists, if not create it
-          try {
-            await databases.get(DATABASE_ID)
-          } catch (dbError) {
-            // Database doesn't exist, create it
-            await databases.create(DATABASE_ID, "Kanban Database", "Database for kanban board")
-          }
-
-          // Check if collections exist, if not create them
-          try {
-            await databases.listCollections(DATABASE_ID)
-          } catch (collectionError) {
-            // Create columns collection
-            try {
-              await databases.createCollection(DATABASE_ID, COLUMNS_COLLECTION_ID, "Columns", ["*"], {
-                userId: ["user:$id"],
-              })
-
-              // Create columns attributes
-              await databases.createStringAttribute(DATABASE_ID, COLUMNS_COLLECTION_ID, "name", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, COLUMNS_COLLECTION_ID, "color", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, COLUMNS_COLLECTION_ID, "userId", 255, true)
-            } catch (columnsError) {
-              console.error("Error creating columns collection:", columnsError)
-            }
-
-            // Create tasks collection
-            try {
-              await databases.createCollection(DATABASE_ID, TASKS_COLLECTION_ID, "Tasks", ["*"], {
-                userId: ["user:$id"],
-              })
-
-              // Create tasks attributes
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "title", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "description", 1000, true)
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "eta", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "status", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "priority", 255, true)
-              await databases.createStringAttribute(DATABASE_ID, TASKS_COLLECTION_ID, "userId", 255, true)
-            } catch (tasksError) {
-              console.error("Error creating tasks collection:", tasksError)
-            }
-          }
-
           // Fetch columns
           const columnsResponse = await databases.listDocuments(DATABASE_ID, COLUMNS_COLLECTION_ID, [
             Query.equal("userId", loggedInUser.$id),
@@ -489,12 +446,12 @@ export default function DashboardPage() {
     <DndProvider backend={HTML5Backend}>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
+          width: 2px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
           background: var(--scrollbar-track);
-          border-radius: 4px;
+          border-radius: 20px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -649,7 +606,7 @@ export default function DashboardPage() {
                 type="text"
                 value={taskEta}
                 onChange={(e) => setTaskEta(e.target.value)}
-                placeholder="e.g. 2 days, 3 hours"
+                placeholder="2 days, 3 hours e.g.  "
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 required
               />
