@@ -32,14 +32,14 @@ export default function LogoutButton() {
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
-        className="flex items-center px-3 py-2 text-sm text-gray-300 bg-gray-800 rounded-md hover:bg-gray-700 "
+        onClick={handleLogout}
+        className="flex items-center px-3 py-2 text-sm justify-center text-white  transition-all duration-200 border border-red-400 bg-red-600/40 shadow rounded-md hover:bg-red-600 "
       >
         <FiLogOut className="mr-1" size={16} />
         Logout
       </button>
-      
-      {/* Confirmation Modal */}
+{/*       
+      Confirmation Modal
       {showModal && (
         <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-lg p-6 max-w-sm w-full">
@@ -61,7 +61,7 @@ export default function LogoutButton() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </>
   )
 }

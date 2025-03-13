@@ -13,7 +13,9 @@ import {
 import LogoutButton from "@/components/dashboard/LogoutButton"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
-import { FiPlus, FiTrash2, FiEdit2, FiX, FiClock, FiAlignLeft, FiFlag, FiLoader } from "react-icons/fi"
+import { FiPlus, FiTrash2, FiEdit2, FiX, FiClock, FiAlignLeft, FiFlag, FiLoader, FiMoon } from "react-icons/fi"
+import { LuSunMedium } from "react-icons/lu";
+
 
 // Color options for columns
 const COLOR_OPTIONS = [
@@ -36,7 +38,7 @@ const PRIORITY_OPTIONS = [
 ]
 
 // Task component with drag functionality
-const Task = ({ task, onDelete, onEdit, moveTask }) => {
+const Task = ({ task, onDelete, onEdit, moveTask, isDarkMode }) => {
   const [{ isDragging }, drag] = useDrag({
     type: "TASK",
     item: { id: task.$id, sourceColumnId: task.status },
@@ -51,24 +53,31 @@ const Task = ({ task, onDelete, onEdit, moveTask }) => {
   return (
     <div
       ref={drag}
-      className={`p-3 mb-2 bg-gray-800 rounded-md shadow border border-gray-700 ${isDragging ? "opacity-50" : "opacity-100"
-        }`}
+      className={`p-3 mb-2 ${isDarkMode ? "bg-[#151B23] border-gray-700" : "bg-white border-gray-200"} rounded-md shadow border ${
+        isDragging ? "opacity-50" : "opacity-100"
+      }`}
       style={{ cursor: "move" }}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-medium text-gray-100">{task.title}</h3>
+        <h3 className={`font-medium ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>{task.title}</h3>
         <div className="flex space-x-1">
-          <button onClick={() => onEdit(task)} className="text-gray-400 hover:text-gray-200 cursor-pointer">
+          <button
+            onClick={() => onEdit(task)}
+            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer`}
+          >
             <FiEdit2 size={14} />
           </button>
-          <button onClick={() => onDelete(task.$id)} className="text-gray-400 hover:text-red-400 cursor-pointer">
+          <button
+            onClick={() => onDelete(task.$id)}
+            className={`${isDarkMode ? "text-gray-400 hover:text-red-400" : "text-gray-500 hover:text-red-500"} cursor-pointer`}
+          >
             <FiTrash2 size={14} />
           </button>
         </div>
       </div>
-      <p className="text-sm text-gray-400 mb-2">{task.description}</p>
+      <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"} mb-2`}>{task.description}</p>
       <div className="flex items-center justify-between">
-        <div className="flex items-center text-xs text-gray-500">
+        <div className={`flex items-center text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
           <FiClock className="mr-1" size={12} />
           <span>ETA: {task.eta}</span>
         </div>
@@ -87,7 +96,17 @@ const Task = ({ task, onDelete, onEdit, moveTask }) => {
 }
 
 // Column component with drop functionality
-const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteColumn, onEditColumn, moveTask }) => {
+const Column = ({
+  column,
+  tasks,
+  onAddTask,
+  onDeleteTask,
+  onEditTask,
+  onDeleteColumn,
+  onEditColumn,
+  moveTask,
+  isDarkMode,
+}) => {
   const [{ isOver }, drop] = useDrop({
     accept: "TASK",
     drop: (item) => {
@@ -104,19 +123,29 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
 
   return (
     <div
-      className={`w-72 flex-shrink-0 bg-gray-900 rounded-md ${isOver ? "bg-opacity-80" : ""}`}
+      className={`w-72 flex-shrink-0 ${isDarkMode ? "bg-[#010409]" : "bg-gray-100"} rounded-md ${isOver ? "bg-opacity-80" : ""}`}
       style={{ height: "calc(100vh - 180px)", display: "flex", flexDirection: "column" }}
     >
-      <div className="p-3 border-b border-gray-700 flex items-center space-x-2">
+      <div className={`p-3 ${isDarkMode ? "border-gray-700" : "border-gray-200"} border-b flex items-center space-x-2`}>
         <div className="w-4 h-4 rounded-full" style={{ backgroundColor: column.color || "#6B7280" }} />
-        <h2 className="font-bold text-gray-100 flex-1">{column.name}</h2>
+        <div className="flex items-center flex-1">
+          <h2 className={`font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>{column.name}</h2>
+          <span
+            className={`ml-2 px-2 py-0.5 text-xs rounded-full ${isDarkMode ? "bg-gray-800 text-gray-400" : "bg-gray-200 text-gray-600"}`}
+          >
+            {columnTasks.length}
+          </span>
+        </div>
         <div className="flex space-x-1">
-          <button onClick={() => onEditColumn(column)} className="text-gray-400 hover:text-gray-200 cursor-pointer">
+          <button
+            onClick={() => onEditColumn(column)}
+            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer`}
+          >
             <FiEdit2 size={16} />
           </button>
           <button
             onClick={() => onDeleteColumn(column.$id)}
-            className="text-gray-400 hover:text-red-400 cursor-pointer"
+            className={`${isDarkMode ? "text-gray-400 hover:text-red-400" : "text-gray-500 hover:text-red-500"} cursor-pointer`}
           >
             <FiTrash2 size={16} />
           </button>
@@ -127,19 +156,28 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
         ref={drop}
         className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar"
         style={{
-          "--scrollbar-thumb": "rgba(255, 255, 255, 0.3)",
-          "--scrollbar-track": "rgba(255, 255, 255, 0.1)",
+          "--scrollbar-thumb": isDarkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.2)",
+          "--scrollbar-track": isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
         }}
       >
         {columnTasks.map((task) => (
-          <Task key={task.$id} task={task} onDelete={onDeleteTask} onEdit={onEditTask} moveTask={moveTask} />
+          <Task
+            key={task.$id}
+            task={task}
+            onDelete={onDeleteTask}
+            onEdit={onEditTask}
+            moveTask={moveTask}
+            isDarkMode={isDarkMode}
+          />
         ))}
       </div>
 
-      <div className="p-3 border-t border-gray-700">
+      <div className={`p-3 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
         <button
           onClick={() => onAddTask(column.$id)}
-          className="w-full py-2 flex items-center justify-center text-sm text-gray-300 bg-gray-800 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+          className={`w-full py-2 flex items-center justify-center text-sm ${
+            isDarkMode ? "text-gray-300 bg-gray-950 hover:bg-gray-700" : "text-gray-700 bg-white hover:bg-gray-200"
+          } rounded transition-colors cursor-pointer`}
         >
           <FiPlus size={16} className="mr-1" /> Add Task
         </button>
@@ -149,15 +187,20 @@ const Column = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onDeleteCo
 }
 
 // Modal component for forms
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, isDarkMode }) => {
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg p-6 w-full md:max-w-md max-w-sm border border-gray-700">
+      <div
+        className={`${isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"} rounded-lg p-6 w-full md:max-w-md max-w-sm border`}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-100">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 cursor-pointer">
+          <h2 className={`text-xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>{title}</h2>
+          <button
+            onClick={onClose}
+            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer`}
+          >
             <FiX size={20} />
           </button>
         </div>
@@ -175,8 +218,9 @@ const ColorPicker = ({ selectedColor, onColorSelect }) => {
         <button
           key={color.id}
           type="button"
-          className={`w-6 h-6 rounded-full cursor-pointer ${selectedColor === color.value ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900" : ""
-            }`}
+          className={`w-6 h-6 rounded-full cursor-pointer ${
+            selectedColor === color.value ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900" : ""
+          }`}
           style={{ backgroundColor: color.value }}
           onClick={() => onColorSelect(color.value)}
         />
@@ -191,6 +235,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isDarkMode, setIsDarkMode] = useState(true)
 
   // Modal states
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
@@ -206,6 +251,21 @@ export default function DashboardPage() {
   const [taskEta, setTaskEta] = useState("")
   const [taskColumnId, setTaskColumnId] = useState("")
   const [taskPriority, setTaskPriority] = useState("normal")
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("kanban-theme")
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "dark")
+    }
+  }, [])
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode
+    setIsDarkMode(newTheme)
+    localStorage.setItem("kanban-theme", newTheme ? "dark" : "light")
+  }
 
   // Fetch user, columns and tasks
   useEffect(() => {
@@ -415,10 +475,12 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className={`min-h-screen ${isDarkMode ? "bg-gray-950" : "bg-gray-50"} flex items-center justify-center`}>
         <div className="text-center">
-          <FiLoader className="animate-spin h-10 w-10 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-400">Loading your board...</p>
+          <FiLoader
+            className={`animate-spin h-10 w-10 ${isDarkMode ? "text-gray-400" : "text-gray-500"} mx-auto mb-4`}
+          />
+          <p className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Loading your board please wait...</p>
         </div>
       </div>
     )
@@ -426,14 +488,20 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center p-6 bg-gray-900 rounded-lg max-w-md">
+      <div className={`min-h-screen ${isDarkMode ? "bg-gray-950" : "bg-gray-50"} flex items-center justify-center`}>
+        <div className={`text-center p-6 ${isDarkMode ? "bg-gray-900" : "bg-white"} rounded-lg max-w-md shadow-lg`}>
           <div className="text-red-500 text-5xl mb-4">!</div>
-          <h2 className="text-xl font-bold text-gray-100 mb-2">Something went wrong</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <h2 className={`text-xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"} mb-2`}>
+            Something went wrong
+          </h2>
+          <p className={isDarkMode ? "text-gray-400" : "text-gray-600"} mb-4>
+            {error}
+          </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-800 text-gray-100 rounded-md hover:bg-gray-700 transition-colors cursor-pointer"
+            className={`px-4 py-2 ${
+              isDarkMode ? "bg-gray-800 text-gray-100 hover:bg-gray-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            } rounded-md transition-colors cursor-pointer`}
           >
             Try Again
           </button>
@@ -461,7 +529,7 @@ export default function DashboardPage() {
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.4);
+          background: ${isDarkMode ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.3)"};
         }
 
         /* Firefox scrollbar styles */
@@ -478,39 +546,75 @@ export default function DashboardPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gray-950">
-        <nav className="flex justify-between items-center p-3 md:p-4 sticky top-0 left-0 right-0 bg-gray-900/40 backdrop-blur-3xl border-b shadow-2xl border-gray-800">
-          <h1 className="text-[20px] font-medium text-gray-100">{user ? `Welcome, ${user.name} : )` : "Loading..."}</h1>
+      <div className={`min-h-screen ${isDarkMode ? "bg-[#0D1117]" : "bg-gray-50"}`}>
+        <nav
+          className={`flex justify-between items-center p-3 md:p-4 sticky top-0 left-0 right-0 ${
+            isDarkMode ? "bg-[#010409] border-gray-800" : "bg-white border-gray-200"
+          } backdrop-blur-3xl border-b shadow-md z-10`}
+        >
+          <h1 className={`text-[20px] font-medium ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+            {user ? `Welcome, ${user.name} : )` : "Loading..."}
+          </h1>
           <LogoutButton />
         </nav>
 
         <div className="md:p-6 p-4">
-          <div className="flex justify-between items-center mb-2 ">
-            <h2 className="md:text-[25px] max-md:text-[20px] font-bold text-gray-100">Task Management</h2>
-            <button
-              onClick={openAddColumnModal}
-              className="md:px-4 px-2  md:py-2 max-md:py-[5px] bg-gray-800 text-gray-100 rounded-md flex items-center hover:bg-gray-700 transition-colors cursor-pointer"
+          <div className="flex justify-between items-center mb-2">
+            <h2
+              className={`md:text-[25px] max-md:text-[20px] font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}
             >
-              <FiPlus size={16} className="mr-1" /> Add Column
-            </button>
+              Task Management
+            </h2>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-md ${
+                  isDarkMode
+                    ? "bg-gray-800 text-yellow-400 hover:bg-gray-700"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                } transition-colors cursor-pointer`}
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDarkMode ? <LuSunMedium size={18} /> : <FiMoon size={18} />}
+              </button>
+              <button
+                onClick={openAddColumnModal}
+                className={`md:px-4 px-2 md:py-2 max-md:py-[5px] ${
+                  isDarkMode
+                    ? "bg-gray-800 text-gray-100 hover:bg-gray-700"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                } rounded-md flex items-center transition-colors cursor-pointer`}
+              >
+                <FiPlus size={16} className="mr-1" /> Add Column
+              </button>
+            </div>
           </div>
-          <h2 className="md:text-sm max-md:text-[13px] font-light md:w-[40%] text-gray-100 mb-6"> Streamline your workflow with an intuitive Kanban board designed for seamless task management. </h2>
-
+          <h2
+            className={`md:text-sm max-md:text-[13px] font-light md:w-[40%] ${isDarkMode ? "text-gray-100" : "text-gray-600"} mb-6`}
+          >
+            Streamline your workflow with an intuitive Kanban board designed for seamless task management.
+          </h2>
 
           {columns.length === 0 ? (
-            <div className="flex items-center justify-center h-[calc(100vh-250px)] text-gray-400">
+            <div
+              className={`flex items-center justify-center h-[calc(100vh-250px)] ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+            >
               <div className="text-center">
                 <p className="mb-4">No columns yet. Start by creating your first column!</p>
                 <button
                   onClick={openAddColumnModal}
-                  className="px-4 py-2 bg-gray-800 text-gray-100 rounded-md flex items-center hover:bg-gray-700 transition-colors cursor-pointer mx-auto"
+                  className={`px-4 py-2 ${
+                    isDarkMode
+                      ? "bg-gray-800 text-gray-100 hover:bg-gray-700"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  } rounded-md flex items-center transition-colors cursor-pointer mx-auto`}
                 >
                   <FiPlus size={16} className="mr-1" /> Add Column
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex space-x-4 max-md:overflow-x-auto pb-4 h-screen  scrollbar-hide">
+            <div className="flex space-x-4 max-md:overflow-x-auto pb-4 h-screen scrollbar-hide">
               {columns.map((column) => (
                 <Column
                   key={column.$id}
@@ -522,6 +626,7 @@ export default function DashboardPage() {
                   onDeleteColumn={deleteColumn}
                   onEditColumn={openEditColumnModal}
                   moveTask={moveTask}
+                  isDarkMode={isDarkMode}
                 />
               ))}
             </div>
@@ -530,77 +635,111 @@ export default function DashboardPage() {
 
         {/* Column Modal */}
         <Modal
-  isOpen={isColumnModalOpen}
-  onClose={() => setIsColumnModalOpen(false)}
-  title={currentColumn ? `Edit Column (${tasks.filter(task => task.columnId === currentColumn.$id).length} Tasks)` : "Add Column"}
->
-  <form onSubmit={handleColumnSubmit}>
-    <div className="mb-2 md:mb-4">
-      <label className="block text-sm font-medium text-gray-300 mb-1">Color</label>
-      <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
-    </div>
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-300 mb-1">Column Name</label>
-      <input
-        type="text"
-        value={columnName}
-        onChange={(e) => setColumnName(e.target.value)}
-        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
-        required
-      />
-    </div>
-    <div className="flex justify-end">
-      <button
-        type="button"
-        onClick={() => setIsColumnModalOpen(false)}
-        className="mr-2 px-4 py-2 text-gray-300 bg-gray-800 rounded-md hover:bg-gray-700 cursor-pointer"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 cursor-pointer"
-      >
-        {currentColumn ? "Update" : "Create"}
-      </button>
-    </div>
-  </form>
-</Modal>
-
+          isOpen={isColumnModalOpen}
+          onClose={() => setIsColumnModalOpen(false)}
+          title={
+            currentColumn
+              ? `Edit Column`
+              : "Add Column"
+          }
+          isDarkMode={isDarkMode}
+        >
+          <form onSubmit={handleColumnSubmit}>
+            <div className="mb-2 md:mb-4">
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                Color
+              </label>
+              <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
+            </div>
+            <div className="mb-4">
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                Column Name
+              </label>
+              <input
+                type="text"
+                value={columnName}
+                onChange={(e) => setColumnName(e.target.value)}
+                className={`w-full px-3 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-400"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600`}
+                required
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsColumnModalOpen(false)}
+                className={`mr-2 px-4 py-2 ${
+                  isDarkMode
+                    ? "text-gray-300 bg-gray-800 hover:bg-gray-700"
+                    : "text-gray-600 bg-gray-200 hover:bg-gray-300"
+                } rounded-md transition-colors cursor-pointer`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={`px-4 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                    : "bg-gray-800 text-white hover:bg-gray-700"
+                } rounded-md transition-colors cursor-pointer`}
+              >
+                {currentColumn ? "Update" : "Create"}
+              </button>
+            </div>
+          </form>
+        </Modal>
 
         {/* Task Modal */}
         <Modal
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
           title={currentTask ? "Edit Task" : "Add Task"}
+          isDarkMode={isDarkMode}
         >
           <form onSubmit={handleTaskSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                Title
+              </label>
               <input
                 type="text"
+                 placeholder="e.g. Lorem ipsum"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                className={`w-full px-3 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-400"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600`}
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
                 <div className="flex items-center">
                   <FiAlignLeft size={14} className="mr-1" /> Description
                 </div>
               </label>
               <textarea
                 value={taskDescription}
+                maxLength={1000} 
+                placeholder="e.g. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
                 onChange={(e) => setTaskDescription(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                className={`w-full px-3 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-400"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600`}
                 rows="3"
                 required
               ></textarea>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
                 <div className="flex items-center">
                   <FiClock size={14} className="mr-1" /> ETA
                 </div>
@@ -609,13 +748,17 @@ export default function DashboardPage() {
                 type="text"
                 value={taskEta}
                 onChange={(e) => setTaskEta(e.target.value)}
-                placeholder="2 days, 3 hours e.g.  "
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                placeholder="e.g. 2 days, 3 hours"
+                className={`w-full px-3 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-400"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600`}
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
                 <div className="flex items-center">
                   <FiFlag size={14} className="mr-1" /> Priority
                 </div>
@@ -623,7 +766,9 @@ export default function DashboardPage() {
               <select
                 value={taskPriority}
                 onChange={(e) => setTaskPriority(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-600 cursor-pointer"
+                className={`w-full px-3 py-2 ${
+                  isDarkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-gray-300 text-gray-800"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600 cursor-pointer`}
                 required
               >
                 {PRIORITY_OPTIONS.map((priority) => (
@@ -634,11 +779,15 @@ export default function DashboardPage() {
               </select>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+              <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                Status
+              </label>
               <select
                 value={taskColumnId}
                 onChange={(e) => setTaskColumnId(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-600 cursor-pointer"
+                className={`w-full px-3 py-2 ${
+                  isDarkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-gray-300 text-gray-800"
+                } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600 cursor-pointer`}
                 required
               >
                 {columns.map((column) => (
@@ -652,13 +801,21 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsTaskModalOpen(false)}
-                className="mr-2 px-4 py-2 text-gray-300 bg-gray-800 rounded-md hover:bg-gray-700 cursor-pointer"
+                className={`mr-2 px-4 py-2 ${
+                  isDarkMode
+                    ? "text-gray-300 bg-gray-800 hover:bg-gray-700"
+                    : "text-gray-600 bg-gray-200 hover:bg-gray-300"
+                } rounded-md transition-colors cursor-pointer`}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 cursor-pointer"
+                className={`px-4 py-2 ${
+                  isDarkMode
+                    ? "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                    : "bg-gray-800 text-white hover:bg-gray-700"
+                } rounded-md transition-colors cursor-pointer`}
               >
                 {currentTask ? "Update" : "Create"}
               </button>
