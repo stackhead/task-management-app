@@ -497,14 +497,15 @@ export default function DashboardPage() {
           <p className={isDarkMode ? "text-gray-400" : "text-gray-600"} mb-4>
             {error}
           </p>
-          <button
-            onClick={() => window.location.reload()}
+         <Link href="/auth/login">
+          <button            
             className={`px-4 py-2 ${
               isDarkMode ? "bg-gray-800 text-gray-100 hover:bg-gray-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
             } rounded-md transition-colors cursor-pointer`}
           >
-            Try Again
-          </button>
+            Log in   
+        </button>
+        </Link>
         </div>
       </div>
     )
