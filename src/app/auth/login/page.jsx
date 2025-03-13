@@ -1,10 +1,11 @@
 "use client"
-import { useState } from "react"
+import { useState , useEffect} from "react"
 import { account } from "@/components/services/appwrite"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
 import { FiLogIn, FiLoader, FiEye, FiEyeOff } from "react-icons/fi"
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -26,13 +27,13 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
-     
+
 
     try {
       // 🔹 First, check if the user already has an active session
       const user = await account.get();
       console.log("User already logged in:", user);
-      
+
       toast.success("You're already logged in! Redirecting...");
       setTimeout(() => {
         router.push("/dashboard");
@@ -42,14 +43,14 @@ export default function LoginPage() {
       console.warn("No active session found, proceeding with login...");
     }
     try {
-     
+
       await account.createEmailPasswordSession(email, password)
       toast.success("Login successful! Redirecting to dashboard please wait...")
 
       // Short delay before redirect for better UX
       setTimeout(() => {
         router.push("/dashboard")
-      }, 1000)
+      }, 500)
     } catch (error) {
       console.error(error)
 
@@ -62,11 +63,23 @@ export default function LoginPage() {
         toast.error("Something went wrong. Please try again later.");
       };
     }
-       finally {
+    finally {
       setIsLoading(false)
     }
   }
+ 
 
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        await account.get(); // Check if user is logged in
+        router.push("/dashboard"); // Redirect to dashboard if logged in
+      } catch (error) {
+        console.log("Not logged in, stay on login page");
+      }
+    }
+    checkSession();
+  }, []);
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       {/* React Hot Toast */}
@@ -105,7 +118,7 @@ export default function LoginPage() {
             <p className="text-gray-600 mt-2">Enter your credentials to access your account</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-md font-medium text-gray-900">
                 Email
@@ -150,10 +163,12 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-
+             {/* <div className="flex justify-end ">          
+              <Link href="/auth/forgot-password" className="text-sm    text-gray-600 hover:text-gray-700 hover:underline">Dont remember your Password ?</Link>
+              </div> */}
             <button
               type="submit"
-              className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 ${isLoading ? "opacity-75 cursor-not-allowed" : ""
+              className={`w-full flex justify-center items-center mt-3 py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 ${isLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               disabled={isLoading}
             >
@@ -173,7 +188,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-            New on our platform ?{" "}
+              New on our platform ?{" "}
               <Link href="/auth/signup" className="font-medium text-gray-900 hover:text-gray-700 hover:underline">
                 Sign up
               </Link>

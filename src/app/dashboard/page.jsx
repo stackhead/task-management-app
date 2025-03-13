@@ -153,8 +153,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md border border-gray-700">
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 rounded-lg p-6 w-full md:max-w-md max-w-sm border border-gray-700">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-100">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-200 cursor-pointer">
@@ -446,7 +446,7 @@ export default function DashboardPage() {
     <DndProvider backend={HTML5Backend}>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 2px;
+          width: thin;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -479,24 +479,26 @@ export default function DashboardPage() {
       `}</style>
 
       <div className="min-h-screen bg-gray-950">
-        <nav className="flex justify-between items-center p-4 bg-gray-900 border-b border-gray-800">
-          <h1 className="text-[18px] font-medium text-gray-100">{user ? `Welcome, ${user.name} : )` : "Loading..."}</h1>
+        <nav className="flex justify-between items-center p-3 md:p-4 sticky top-0 left-0 right-0 bg-gray-900/40 backdrop-blur-3xl border-b shadow-2xl border-gray-800">
+          <h1 className="text-[20px] font-medium text-gray-100">{user ? `Welcome, ${user.name} : )` : "Loading..."}</h1>
           <LogoutButton />
         </nav>
 
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-100">My Kanban Board</h2>
+        <div className="md:p-6 p-4">
+          <div className="flex justify-between items-center mb-2 ">
+            <h2 className="md:text-[25px] max-md:text-[20px] font-bold text-gray-100">Task Management</h2>
             <button
               onClick={openAddColumnModal}
-              className="px-4 py-2 bg-gray-800 text-gray-100 rounded-md flex items-center hover:bg-gray-700 transition-colors cursor-pointer"
+              className="md:px-4 px-2  md:py-2 max-md:py-[5px] bg-gray-800 text-gray-100 rounded-md flex items-center hover:bg-gray-700 transition-colors cursor-pointer"
             >
               <FiPlus size={16} className="mr-1" /> Add Column
             </button>
           </div>
+          <h2 className="md:text-sm max-md:text-[13px] font-light md:w-[40%] text-gray-100 mb-6"> Streamline your workflow with an intuitive Kanban board designed for seamless task management. </h2>
+
 
           {columns.length === 0 ? (
-            <div className="flex items-center justify-center h-[calc(100vh-250px)] text-gray-500">
+            <div className="flex items-center justify-center h-[calc(100vh-250px)] text-gray-400">
               <div className="text-center">
                 <p className="mb-4">No columns yet. Start by creating your first column!</p>
                 <button
@@ -508,7 +510,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="flex space-x-4 overflow-x-auto pb-4 h-[calc(100vh-180px)] custom-scrollbar">
+            <div className="flex space-x-4 max-md:overflow-x-auto pb-4 h-screen  scrollbar-hide">
               {columns.map((column) => (
                 <Column
                   key={column.$id}
@@ -528,42 +530,43 @@ export default function DashboardPage() {
 
         {/* Column Modal */}
         <Modal
-          isOpen={isColumnModalOpen}
-          onClose={() => setIsColumnModalOpen(false)}
-          title={currentColumn ? "Edit Column" : "Add Column"}
-        >
-          <form onSubmit={handleColumnSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">Color</label>
-              <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">Column Name</label>
-              <input
-                type="text"
-                value={columnName}
-                onChange={(e) => setColumnName(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsColumnModalOpen(false)}
-                className="mr-2 px-4 py-2 text-gray-300 bg-gray-800 rounded-md hover:bg-gray-700 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 cursor-pointer"
-              >
-                {currentColumn ? "Update" : "Create"}
-              </button>
-            </div>
-          </form>
-        </Modal>
+  isOpen={isColumnModalOpen}
+  onClose={() => setIsColumnModalOpen(false)}
+  title={currentColumn ? `Edit Column (${tasks.filter(task => task.columnId === currentColumn.$id).length} Tasks)` : "Add Column"}
+>
+  <form onSubmit={handleColumnSubmit}>
+    <div className="mb-2 md:mb-4">
+      <label className="block text-sm font-medium text-gray-300 mb-1">Color</label>
+      <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
+    </div>
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-300 mb-1">Column Name</label>
+      <input
+        type="text"
+        value={columnName}
+        onChange={(e) => setColumnName(e.target.value)}
+        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
+        required
+      />
+    </div>
+    <div className="flex justify-end">
+      <button
+        type="button"
+        onClick={() => setIsColumnModalOpen(false)}
+        className="mr-2 px-4 py-2 text-gray-300 bg-gray-800 rounded-md hover:bg-gray-700 cursor-pointer"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 cursor-pointer"
+      >
+        {currentColumn ? "Update" : "Create"}
+      </button>
+    </div>
+  </form>
+</Modal>
+
 
         {/* Task Modal */}
         <Modal
