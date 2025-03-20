@@ -54,7 +54,7 @@ const Task = ({ task, onDelete, onEdit, moveTask, isDarkMode }) => {
     <div
       ref={drag}
       className={`p-3 mb-2 ${isDarkMode ? "bg-[#151B23] border-gray-700" : "bg-white border-gray-200"} rounded-md shadow border ${
-        isDragging ? "opacity-50" : "opacity-100"
+        isDragging ? "opacity-50 " : "opacity-100"
       }`}
       style={{ cursor: "move" }}
     >
@@ -63,7 +63,7 @@ const Task = ({ task, onDelete, onEdit, moveTask, isDarkMode }) => {
         <div className="flex space-x-1">
           <button
             onClick={() => onEdit(task)}
-            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer`}
+            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer `}
           >
             <FiEdit2 size={14} />
           </button>
@@ -123,15 +123,15 @@ const Column = ({
 
   return (
     <div
-      className={`w-72 flex-shrink-0 ${isDarkMode ? "bg-[#010409]" : "bg-gray-100"} rounded-md ${isOver ? "bg-opacity-80" : ""}`}
+      className={`w-72 border border-[#bdbdbd] flex-shrink-0 ${isDarkMode ? "bg-[#010409]" : "bg-gray-100"} rounded-md ${isOver ? "bg-opacity-80" : ""}`}
       style={{ height: "calc(100vh - 180px)", display: "flex", flexDirection: "column" }}
     >
-      <div className={`p-3 ${isDarkMode ? "border-gray-700" : "border-gray-200"} border-b flex items-center space-x-2`}>
+      <div className={`p-3 ${isDarkMode ? "border-gray-700" : "border-gray-200"} border-b flex items-center border border-[#cecece] space-x-2`}>
         <div className="w-4 h-4 rounded-full" style={{ backgroundColor: column.color || "#6B7280" }} />
         <div className="flex items-center flex-1">
           <h2 className={`font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>{column.name}</h2>
           <span
-            className={`ml-2 px-2 py-0.5 text-xs rounded-full ${isDarkMode ? "bg-gray-800 text-gray-400" : "bg-gray-200 text-gray-600"}`}
+            className={`ml-2 px-2 py-0.5 text-xs rounded-full ${isDarkMode ? "bg-gray-800 text-gray-400" : "bg-gray-200 text-gray-600 "}`}
           >
             {columnTasks.length}
           </span>
@@ -139,7 +139,7 @@ const Column = ({
         <div className="flex space-x-1">
           <button
             onClick={() => onEditColumn(column)}
-            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer`}
+            className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"} cursor-pointer `}
           >
             <FiEdit2 size={16} />
           </button>
@@ -172,11 +172,11 @@ const Column = ({
         ))}
       </div>
 
-      <div className={`p-3 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+      <div className={`  ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
         <button
           onClick={() => onAddTask(column.$id)}
-          className={`w-full py-2 flex items-center justify-center text-sm ${
-            isDarkMode ? "text-gray-300 bg-gray-950 hover:bg-gray-700" : "text-gray-700 bg-white hover:bg-gray-200"
+          className={`w-full py-3 flex items-center justify-center text-sm  ${
+            isDarkMode ? "text-gray-300 bg-gray-950 hover:bg-gray-900" : "text-gray-700 bg-white hover:bg-gray-200"
           } rounded transition-colors cursor-pointer`}
         >
           <FiPlus size={16} className="mr-1" /> Add Task
@@ -480,7 +480,7 @@ export default function DashboardPage() {
           <FiLoader
             className={`animate-spin h-10 w-10 ${isDarkMode ? "text-gray-400" : "text-gray-500"} mx-auto mb-4`}
           />
-          <p className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Loading your board please wait...</p>
+          <p className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Loading your workspace please wait...</p>
         </div>
       </div>
     )
@@ -492,7 +492,7 @@ export default function DashboardPage() {
         <div className={`text-center p-6 ${isDarkMode ? "bg-gray-900" : "bg-white"} rounded-lg max-w-md shadow-lg`}>
           <div className="text-red-500 text-5xl mb-4">!</div>
           <h2 className={`text-xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"} mb-2`}>
-            Something went wrong
+            oops Something went wrong
           </h2>
           <p className={isDarkMode ? "text-gray-400" : "text-gray-600"} mb-4>
             {error}
@@ -580,7 +580,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={openAddColumnModal}
-                className={`md:px-4 px-2 md:py-2 max-md:py-[5px] ${
+                className={`md:px-4 px-2 md:py-[5px] max-md:py-[5px] ${
                   isDarkMode
                     ? "bg-gray-800 text-gray-100 hover:bg-gray-700"
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
@@ -746,7 +746,7 @@ export default function DashboardPage() {
                 </div>
               </label>
               <input
-                type="text"
+                type="calender"
                 value={taskEta}
                 onChange={(e) => setTaskEta(e.target.value)}
                 placeholder="e.g. 2 days, 3 hours"
