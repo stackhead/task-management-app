@@ -1,11 +1,19 @@
 "use client"
-import { useState , useEffect} from "react"
-import { account } from "@/components/services/appwrite"
+
+import { useState, useEffect } from "react"
+import { Client, Account } from "appwrite"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
-import { FiLogIn, FiLoader, FiEye, FiEyeOff } from "react-icons/fi"
+import { FiLogIn, FiLoader, FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"
+import { motion } from "framer-motion"
 
+// Initialize Appwrite client
+const client = new Client()
+  .setEndpoint('https://cloud.appwrite.io/v1')
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+
+const account = new Account(client)
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,6 +21,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  }
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
@@ -27,176 +48,209 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
-
+    let loadingToast = toast.loading("Checking your session...")
 
     try {
-      // 🔹 First, check if the user already has an active session
-      const user = await account.get();
-      console.log("User already logged in:", user);
-
-      toast.success("You're already logged in! Redirecting...");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
-      return; // Stop further execution
+      // First check if user already has an active session
+      const user = await account.get()
+      toast.dismiss(loadingToast)
+      toast.success("You're already logged in! Redirecting...")
+      setTimeout(() => router.push("/dashboard"), 1000)
+      return
     } catch (err) {
-      console.warn("No active session found, proceeding with login...");
+      console.warn("No active session found, proceeding with login...")
     }
+
     try {
-
+      loadingToast = toast.loading("Authenticating...")
       await account.createEmailPasswordSession(email, password)
-      toast.success("Login successful! Redirecting to dashboard please wait...")
-
-      // Short delay before redirect for better UX
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 500)
+      toast.dismiss(loadingToast)
+      toast.success("Login successful! Redirecting...")
+      setTimeout(() => router.push("/dashboard"), 500)
     } catch (error) {
       console.error(error)
-
-
+      toast.dismiss(loadingToast)
+      
       if (error.code === 429) {
-        toast.error("Too many login attempts. Please wait a few minutes before trying again.");
+        toast.error("Too many login attempts. Please wait before trying again.")
       } else if (error.code === 401) {
-        toast.error("Incorrect email or password. Please try again.");
+        toast.error("Incorrect email or password")
       } else {
-        toast.error("Something went wrong. Please try again later.");
-      };
-    }
-    finally {
+        toast.error("Login failed. Please try again later.")
+      }
+    } finally {
       setIsLoading(false)
     }
   }
- 
 
   useEffect(() => {
     async function checkSession() {
       try {
-        await account.get(); // Check if user is logged in
-        router.push("/dashboard"); // Redirect to dashboard if logged in
+        await account.get()
+        router.push("/dashboard")
       } catch (error) {
-        console.log("Not logged in, stay on login page");
+        console.log("Not logged in, stay on login page")
       }
     }
-    checkSession();
-  }, []);
+    checkSession()
+  }, [])
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      {/* React Hot Toast */}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <Toaster
         position="top-right"
         toastOptions={{
-          success: {
-            style: {
-              background: "#10B981", // Green
-              color: "white",
-            },
-            iconTheme: {
-              primary: "white",
-              secondary: "#10B981",
-            },
+          style: {
+            borderRadius: '12px',
+            background: '#fff',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            color: '#1a1a1a',
           },
-          error: {
-            style: {
-              background: "#fa2a2a", // Red
-              color: "white",
-            },
-            iconTheme: {
-              primary: "white",
-              secondary: "#404040",
-            },
-          },
-          duration: 5000,
         }}
       />
 
-      {/* Login Card */}
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6 sm:p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-            <p className="text-gray-600 mt-2">Enter your credentials to access your account</p>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row"
+      >
+        {/* Illustration Section */}
+        <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-blue-500 p-8 hidden md:flex flex-col justify-center">
+          <div className="space-y-4 text-white">
+            <h2 className="text-3xl font-bold">Welcome Back</h2>
+            <p className="opacity-90">We're excited to see you again!</p>
+          </div>
+          <div className="mt-8 relative h-64">
+            <div className="absolute inset-0 bg-[url('/images/auth-illustration.svg')] bg-contain bg-no-repeat bg-center opacity-20" />
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="md:w-1/2 p-8 sm:p-10"
+        >
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
+            <p className="text-gray-600">Access your account to continue</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-md font-medium text-gray-900">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                required
-                className="w-full px-3 py-2 border border-gray-900 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-md font-medium text-gray-900">
-                  Password
-                </label>
-
+          <form onSubmit={handleLogin} className="space-y-6">
+            <motion.div variants={itemVariants}>
+              <div className="relative group">
+                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500" />
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  className="w-full text-black pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                />
               </div>
-              <div className="relative">
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <div className="relative group">
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="w-full px-3 py-2 pr-10 border border-gray-900 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                  className="w-full pl-10 text-black pr-12 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-900"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors"
                   onClick={togglePasswordVisibility}
-                  tabIndex="-1"
                 >
-                  {showPassword ? <FiEye className="h-5 w-5" /> : <FiEyeOff className="h-5 w-5" />}
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-            </div>
-             {/* <div className="flex justify-end ">          
-              <Link href="/auth/forgot-password" className="text-sm    text-gray-600 hover:text-gray-700 hover:underline">Dont remember your Password ?</Link>
-              </div> */}
-            <button
-              type="submit"
-              className={`w-full flex justify-center items-center mt-3 py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 ${isLoading ? "opacity-75 cursor-not-allowed" : ""
-                }`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <FiLoader className="animate-spin -ml-1 mr-3 h-4 w-4" />
-                  Logging in...
-                </>
-              ) : (
-                <>
-                  <FiLogIn className="w-4 h-4 mr-2" />
-                  Login
-                </>
-              )}
-            </button>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="flex justify-end">
+              <Link 
+                href="/auth/forgot-password" 
+                className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-3.5 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all relative overflow-hidden"
+              >
+                {isLoading ? (
+                  <>
+                    <FiLoader className="animate-spin mr-2" />
+                    Signing In...
+                  </>
+                ) : (
+                  <>
+                    <FiLogIn className="mr-2" />
+                    Sign In
+                  </>
+                )}
+                {isLoading && (
+                  <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+                )}
+              </button>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.835 0 3.456.705 4.691 1.942l3.149-3.149A9.97 9.97 0 0012.545 2C7.021 2 2.545 6.477 2.545 12s4.476 10 10 10c5.523 0 10-4.477 10-10a9.967 9.967 0 00-2.195-6.285l-5.26 5.285z"/>
+                </svg>
+                Google
+              </button>
+              <button
+                type="button"
+                className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path fill="#181717" d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/>
+                </svg>
+                GitHub
+              </button>
+            </motion.div>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              New on our platform ?{" "}
-              <Link href="/auth/signup" className="font-medium text-gray-900 hover:text-gray-700 hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
+          <motion.div variants={itemVariants} className="mt-8 text-center text-sm text-gray-600">
+            New on our platform?{" "}
+            <Link 
+              href="/auth/signup" 
+              className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+            >
+              Create account
+            </Link>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
-
