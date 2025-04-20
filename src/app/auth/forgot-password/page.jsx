@@ -1,51 +1,81 @@
 "use client"
 
 import { useState } from "react"
+import { Client, Account, Databases, ID } from "appwrite"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
 import { FiMail, FiLoader, FiArrowLeft } from "react-icons/fi"
 import { motion } from "framer-motion"
 
+// Initialize Appwrite
+const client = new Client()
+  .setEndpoint('https://cloud.appwrite.io/v1')
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+
+const account = new Account(client)
+const databases = new Databases(client)
+
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault()
-
-    if (!email) {
-      toast.error("Please enter your email")
-      return
-    }
-
-    setIsLoading(true)
-    const loadingToast = toast.loading("Sending OTP...")
+  const sendOTP = async () => {
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = Date.now() + 15 * 60 * 1000 // 15 minutes expiry
 
     try {
-      // Generate OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
+      // Store OTP in database
+      await databases.createDocument(
+        'main', // Your database ID
+        'otps', // Your collection ID
+        ID.unique(),
+        { email, otp, expiresAt }
+      )
 
-      // Store in localStorage temporarily (for demo purposes)
-      localStorage.setItem("resetOTP", otp)
-      localStorage.setItem("resetEmail", email)
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast.dismiss(loadingToast)
+      // In production, replace this with your email service
+      console.log(`OTP for ${email}: ${otp}`) // For development only
       toast.success("OTP sent to your email!")
-      router.push("/auth/otp")
       
+      return true
     } catch (error) {
-      console.error("OTP sending failed:", error)
-      toast.dismiss(loadingToast)
-      toast.error(error.message || "Failed to send OTP")
-    } finally {
-      setIsLoading(false)
+      console.error("Error sending OTP:", error)
+      toast.error("Failed to send OTP")
+      return false
     }
   }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+  
+    try {
+      // 1. Create anonymous session (if needed)
+      await account.createAnonymousSession();
+  
+      // 2. Generate reset link
+      const resetUrl = `${window.location.origin}/auth/reset-password`;
+      await account.createRecovery(email, resetUrl);
+  
+      toast.success("Password reset link sent to your email!");
+    } catch (error) {
+      console.error("Password reset error:", error);
+  
+      // Specific error handling
+      if (error.type === 'user_invalid_credentials') {
+        toast.error("Email not registered");
+      } else if (error.message.includes("SMTP")) {
+        toast.error("Email service not configured");
+      } else {
+        toast.error("Failed to send reset link");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
@@ -70,7 +100,7 @@ export default function ForgotPasswordPage() {
         <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-blue-500 p-8 hidden md:flex flex-col justify-center">
           <div className="space-y-4 text-white">
             <h2 className="text-3xl font-bold">Reset Your Password</h2>
-            <p className="opacity-90">Enter your email to receive a verification code</p>
+            <p className="opacity-90">We'll send an OTP to your registered email</p>
           </div>
           <div className="mt-8 relative h-64">
             <div className="absolute inset-0 bg-[url('/images/auth-illustration.svg')] bg-contain bg-no-repeat bg-center opacity-20" />
@@ -81,7 +111,7 @@ export default function ForgotPasswordPage() {
         <div className="md:w-1/2 p-8 sm:p-10">
           <button 
             onClick={() => router.back()}
-            className="flex items-center cursor-pointer text-gray-600 hover:text-indigo-600 mb-6 transition-colors"
+            className="flex cursor-pointer items-center text-gray-600 hover:text-indigo-600 mb-6 transition-colors"
           >
             <FiArrowLeft className="mr-2" />
             Back
@@ -89,7 +119,7 @@ export default function ForgotPasswordPage() {
 
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Forgot Password?</h1>
-            <p className="text-gray-600">We'll send a verification code to your email</p>
+            <p className="text-gray-600">Enter your registered email to receive OTP</p>
           </div>
 
           <form onSubmit={handleForgotPassword} className="space-y-6">
@@ -97,7 +127,7 @@ export default function ForgotPasswordPage() {
               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500" />
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full text-black pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
@@ -108,18 +138,15 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full cursor-pointer flex justify-center items-center py-3.5 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all relative overflow-hidden disabled:opacity-75"
+              className="w-full flex cursor-pointer justify-center items-center py-3.5 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all relative overflow-hidden disabled:opacity-75"
             >
               {isLoading ? (
                 <>
                   <FiLoader className="animate-spin mr-2" />
-                  Sending...
+                  Sending link...
                 </>
               ) : (
-                <>
-                  <FiMail className="mr-2" />
-                  Send Verification Code
-                </>
+                "Send link"
               )}
             </button>
           </form>

@@ -55,6 +55,7 @@ export default function DashboardPage() {
   const [taskEta, setTaskEta] = useState("")
   const [taskColumnId, setTaskColumnId] = useState("")
   const [taskPriority, setTaskPriority] = useState("normal")
+  
 
   // Calculate board height on mount and window resize
   useEffect(() => {
