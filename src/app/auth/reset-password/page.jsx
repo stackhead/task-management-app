@@ -1,11 +1,22 @@
 "use client"
 import { useState, useEffect, useMemo, Suspense } from "react"
-import { account } from "@/components/services/appwrite"
+import { Client, Account } from "appwrite"
 import { useRouter, useSearchParams } from "next/navigation"
 import toast, { Toaster } from "react-hot-toast"
 import { FiLock, FiLoader, FiCheckCircle, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi"
 import { motion } from "framer-motion"
 import Link from "next/link"
+
+// Initialize Appwrite client outside the component
+const getAppwriteClient = () => {
+  if (typeof window !== 'undefined') {
+    const client = new Client()
+      .setEndpoint("https://cloud.appwrite.io/v1")
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
+    return new Account(client)
+  }
+  return null
+}
 
 function ResetPasswordContent() {
   const router = useRouter()
@@ -18,6 +29,12 @@ function ResetPasswordContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [progress, setProgress] = useState(0)
   const [linkStatus, setLinkStatus] = useState("verifying")
+  const [account, setAccount] = useState(null)
+
+  // Initialize Appwrite client on client-side only
+  useEffect(() => {
+    setAccount(getAppwriteClient())
+  }, [])
 
   // Get params from URL
   const userId = searchParams.get("userId")
@@ -77,6 +94,8 @@ function ResetPasswordContent() {
 
   // Validate the reset link on component mount
   useEffect(() => {
+    if (!account) return
+
     const validateResetLink = async () => {
       if (!userId || !secret || secret.length > 256) {
         setLinkStatus("invalid")
@@ -102,13 +121,12 @@ function ResetPasswordContent() {
         setLinkStatus("invalid")
         toast.error("Verification timed out. Please try again.")
       }
-    }, 
-    60000) // 15 second timeout
+    }, 15000) // 15 second timeout
 
     validateResetLink()
 
     return () => clearTimeout(timeoutId)
-  }, [userId, secret, linkStatus])
+  }, [account, userId, secret, linkStatus])
 
   useEffect(() => {
     if (linkStatus === "invalid") {
@@ -123,7 +141,7 @@ function ResetPasswordContent() {
   const handleResetPassword = async (e) => {
     e.preventDefault()
 
-    if (!isValidLink) return
+    if (!account || !isValidLink) return
     if (password !== confirmPassword) {
       toast.error("Passwords don't match")
       return
