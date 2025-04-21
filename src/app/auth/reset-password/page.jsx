@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, Suspense } from "react"
 import { account } from "@/components/services/appwrite"
 import { useRouter, useSearchParams } from "next/navigation"
 import toast, { Toaster } from "react-hot-toast"
-import { FiLock, FiLoader, FiCheckCircle, FiEye, FiEyeOff, FiArrowLeft, FiMail } from "react-icons/fi"
+import { FiLock, FiLoader, FiCheckCircle, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi"
 import { motion } from "framer-motion"
 import Link from "next/link"
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
 
     const calculatedProgress = (strength / 4) * 100
 
-    if (!pass) return { progress: 0, message: "Password must be at least 8 digit long and contain one special character", color: "text-red-400" }
+    if (!pass) return { progress: 0, message: "Password must be at least 8 characters", color: "text-red-400" }
     if (!hasMinLength) return { progress: calculatedProgress, message: "Minimum 8 characters", color: "text-red-400" }
 
     let message = "Good start"
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
       message = "Strong password!"
       color = "text-green-600"
     } else if (strength >= 2) {
-      message = "Almost there must contain 1 special character"
+      message = "Almost there - add one special character"
       color = "text-yellow-600"
     }
 
@@ -102,19 +102,19 @@ export default function ResetPasswordPage() {
         setLinkStatus("invalid")
         toast.error("Verification timed out. Please try again.")
       }
-    }, 60000)
+    }, 15000) // 15 second timeout
 
     validateResetLink()
 
     return () => clearTimeout(timeoutId)
-  }, [userId, secret])
+  }, [userId, secret, linkStatus])
 
   useEffect(() => {
     if (linkStatus === "invalid") {
       toast.error("Invalid reset link format")
       router.push("/auth/forgot-password")
     } else if (linkStatus === "expired") {
-      toast.error("This reset link has expired or been used already please request new one")
+      toast.error("This reset link has expired or been used already")
       router.push("/auth/forgot-password")
     }
   }, [linkStatus, router])
@@ -159,16 +159,19 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (linkStatus === "verifying") {
+  if (linkStatus !== "valid") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
           <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Verifying reset link...</h2>
-          <p className="text-gray-600">This should only take a moment</p>
-          <div className="mt-4 h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-indigo-600 animate-pulse" style={{ width: "70%" }} />
-          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            {linkStatus === "verifying" ? "Verifying reset link..." : "Invalid Link"}
+          </h2>
+          <p className="text-gray-600">
+            {linkStatus === "verifying" 
+              ? "Please wait while we verify your reset link"
+              : "Redirecting you to request a new link..."}
+          </p>
         </div>
       </div>
     )
@@ -312,5 +315,20 @@ export default function ResetPasswordPage() {
         </motion.div>
       </motion.div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+          <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
