@@ -5,13 +5,14 @@ import { Client, Account, ID } from "appwrite"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
-import { FiLoader, FiUserPlus, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from "react-icons/fi"
+import { FiUserPlus, FiLoader, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from "react-icons/fi"
 import { motion } from "framer-motion"
+import { useGoogleAuth } from "../../../hooks/use-google-auth"
 
 // Initialize Appwrite client
 const client = new Client()
-  .setEndpoint('https://cloud.appwrite.io/v1')
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+  .setEndpoint("https://cloud.appwrite.io/v1")
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
 
 const account = new Account(client)
 
@@ -23,18 +24,19 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [progress, setProgress] = useState(0)
+  const { signInWithGoogle } = useGoogleAuth()
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   }
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
+    visible: { y: 0, opacity: 1 },
   }
 
   // Pure validation function (no state updates)
@@ -42,21 +44,21 @@ export default function SignupPage() {
     const hasMinLength = pass.length >= 8
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass)
     const hasNumber = /\d/.test(pass)
-    const strength = [
-      hasMinLength,
-      hasSpecialChar,
-      hasNumber,
-      pass.length >= 12
-    ].filter(Boolean).length
-    
+    const strength = [hasMinLength, hasSpecialChar, hasNumber, pass.length >= 12].filter(Boolean).length
+
     const calculatedProgress = (strength / 4) * 100
 
-    if (!pass) return { progress: 0, message: "Password must be at least 8 digit long and contain one special chracter", color: "text-red-400" }
+    if (!pass)
+      return {
+        progress: 0,
+        message: "Password must be at least 8 digit long and contain one special chracter",
+        color: "text-red-400",
+      }
     if (!hasMinLength) return { progress: calculatedProgress, message: "Minimum 8 characters", color: "text-red-400" }
-    
+
     let message = "Good start"
     let color = "text-yellow-600"
-    
+
     if (strength >= 3) {
       message = "Strong password!"
       color = "text-green-600"
@@ -113,7 +115,7 @@ export default function SignupPage() {
       // Step 3: Get user session to verify login
       loadingToast = toast.loading("Setting up your dashboard...")
       const user = await account.get()
-      
+
       if (user) {
         toast.dismiss(loadingToast)
         toast.success(`Welcome ${user.name}!`)
@@ -124,19 +126,22 @@ export default function SignupPage() {
     } catch (error) {
       console.error(error)
       toast.dismiss(loadingToast)
-      
-      if (error.type === 'user_already_exists') {
+
+      if (error.type === "user_already_exists") {
         toast.error("An account with this email already exists")
       } else {
         toast.error(error.message || "Failed to complete signup. Please try again.")
       }
-      
+
       if (error.message.includes("session")) {
         toast(
           <span>
-            Account created but login failed. Try <Link href="/auth/login" className="underline">logging in</Link>
+            Account created but login failed. Try{" "}
+            <Link href="/auth/login" className="underline">
+              logging in
+            </Link>
           </span>,
-          { duration: 6000 }
+          { duration: 6000 },
         )
       }
     } finally {
@@ -144,21 +149,30 @@ export default function SignupPage() {
     }
   }
 
+  const handleGoogleSignup = async () => {
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      console.error("Google signup error:", error)
+      toast.error("Failed to sign up with Google. Please try again.")
+    }
+  }
+
   return (
-    <div className="min-h-screen  bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: '12px',
-            background: '#fff',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            color: '#1a1a1a',
+            borderRadius: "12px",
+            background: "#fff",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            color: "#1a1a1a",
           },
         }}
       />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row"
@@ -175,12 +189,7 @@ export default function SignupPage() {
         </div>
 
         {/* Form Section */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="md:w-1/2 p-8 sm:p-10"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="md:w-1/2 p-8 sm:p-10">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
             <p className="text-gray-600">Get started with your free account</p>
@@ -243,20 +252,15 @@ export default function SignupPage() {
               </div>
               <div className="mt-2">
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full transition-all duration-500 ease-out" 
-                    style={{ 
+                  <div
+                    className="h-full transition-all duration-500 ease-out"
+                    style={{
                       width: `${progress}%`,
-                      backgroundColor: 
-                        progress < 50 ? '#f59e0b' : 
-                        progress < 75 ? '#3b82f6' : 
-                        '#10b981'
+                      backgroundColor: progress < 50 ? "#f59e0b" : progress < 75 ? "#3b82f6" : "#10b981",
                     }}
                   />
                 </div>
-                <p className={`text-sm mt-1 ${passwordValidation.color}`}>
-                  {passwordValidation.message}
-                </p>
+                <p className={`text-sm mt-1 ${passwordValidation.color}`}>{passwordValidation.message}</p>
               </div>
             </motion.div>
 
@@ -277,9 +281,7 @@ export default function SignupPage() {
                     Sign Up
                   </>
                 )}
-                {isLoading && (
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
-                )}
+                {isLoading && <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />}
               </button>
             </motion.div>
 
@@ -295,10 +297,14 @@ export default function SignupPage() {
             <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={handleGoogleSignup}
                 className="flex text-black cursor-pointer items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.835 0 3.456.705 4.691 1.942l3.149-3.149A9.97 9.97 0 0012.545 2C7.021 2 2.545 6.477 2.545 12s4.476 10 10 10c5.523 0 10-4.477 10-10a9.967 9.967 0 00-2.195-6.285l-5.26 5.285z"/>
+                  <path
+                    fill="#EA4335"
+                    d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.835 0 3.456.705 4.691 1.942l3.149-3.149A9.97 9.97 0 0012.545 2C7.021 2 2.545 6.477 2.545 12s4.476 10 10 10c5.523 0 10-4.477 10-10a9.967 9.967 0 00-2.195-6.285l-5.26 5.285z"
+                  />
                 </svg>
                 Google
               </button>
@@ -307,7 +313,10 @@ export default function SignupPage() {
                 className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="#181717" d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/>
+                  <path
+                    fill="#181717"
+                    d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"
+                  />
                 </svg>
                 GitHub
               </button>
@@ -316,10 +325,7 @@ export default function SignupPage() {
 
           <motion.div variants={itemVariants} className="mt-8 text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <Link 
-              href="/auth/login" 
-              className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
-            >
+            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
               Sign in
             </Link>
           </motion.div>

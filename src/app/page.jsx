@@ -26,7 +26,7 @@ export default function HomePage() {
   }, []);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading please wait...</div>;
+    return <div className="flex h-screen bg-gradient-to-br from-indigo-50 to-blue-100 items-center justify-center">Loading please wait...</div>;
   }
 
   return <LoginPage />;

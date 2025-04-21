@@ -7,11 +7,12 @@ import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
 import { FiLogIn, FiLoader, FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"
 import { motion } from "framer-motion"
+import { useGoogleAuth } from "../../../hooks/use-google-auth"
 
 // Initialize Appwrite client
 const client = new Client()
-  .setEndpoint('https://cloud.appwrite.io/v1')
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+  .setEndpoint("https://cloud.appwrite.io/v1")
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
 
 const account = new Account(client)
 
@@ -21,18 +22,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const { signInWithGoogle } = useGoogleAuth()
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   }
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
+    visible: { y: 0, opacity: 1 },
   }
 
   const togglePasswordVisibility = () => {
@@ -48,29 +51,17 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
-    let loadingToast = toast.loading("Checking your session...")
+    const loadingToast = toast.loading("Authenticating...")
 
     try {
-      // First check if user already has an active session
-      const user = await account.get()
-      toast.dismiss(loadingToast)
-      toast.success("You're already logged in! Redirecting...")
-      setTimeout(() => router.push("/dashboard"), 1000)
-      return
-    } catch (err) {
-      console.warn("No active session found, proceeding with login...")
-    }
-
-    try {
-      loadingToast = toast.loading("Authenticating...")
       await account.createEmailPasswordSession(email, password)
       toast.dismiss(loadingToast)
       toast.success("Login successful! Redirecting...")
-      setTimeout(() => router.push("/dashboard"), 500)
+      router.push("/dashboard")
     } catch (error) {
       console.error(error)
       toast.dismiss(loadingToast)
-      
+
       if (error.code === 429) {
         toast.error("Too many login attempts. Please wait before trying again.")
       } else if (error.code === 401) {
@@ -83,17 +74,49 @@ export default function LoginPage() {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      console.error("Google login error:", error)
+      toast.error("Failed to sign in with Google. Please try again.")
+    }
+  }
+
   useEffect(() => {
-    async function checkSession() {
+    const checkSession = async () => {
       try {
-        await account.get()
-        router.push("/dashboard")
+        const session = await account.get()
+        if (session) {
+          router.push("/dashboard")
+        }
       } catch (error) {
-        console.log("Not logged in, stay on login page")
+        console.log("No active session found")
+      } finally {
+        setCheckingSession(false)
       }
     }
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setCheckingSession(false)
+    }, 3000) // 3 seconds timeout
+
     checkSession()
-  }, [])
+
+    return () => clearTimeout(timeoutId)
+  }, [router])
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
+          <p className="text-gray-700">Checking your session...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
@@ -101,15 +124,15 @@ export default function LoginPage() {
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: '12px',
-            background: '#fff',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            color: '#1a1a1a',
+            borderRadius: "12px",
+            background: "#fff",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            color: "#1a1a1a",
           },
         }}
       />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row"
@@ -126,12 +149,7 @@ export default function LoginPage() {
         </div>
 
         {/* Form Section */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="md:w-1/2 p-8 sm:p-10"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="md:w-1/2 p-8 sm:p-10">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
             <p className="text-gray-600">Access your account to continue</p>
@@ -169,7 +187,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors"
+                  className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors"
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -178,8 +196,8 @@ export default function LoginPage() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="flex justify-end">
-              <Link 
-                href="/auth/forgot-password" 
+              <Link
+                href="/auth/forgot-password"
                 className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors"
               >
                 Forgot password?
@@ -190,7 +208,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-3.5 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all relative overflow-hidden"
+                className="w-full flex cursor-pointer justify-center items-center py-3.5 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all relative overflow-hidden"
               >
                 {isLoading ? (
                   <>
@@ -202,9 +220,6 @@ export default function LoginPage() {
                     <FiLogIn className="mr-2" />
                     Sign In
                   </>
-                )}
-                {isLoading && (
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
                 )}
               </button>
             </motion.div>
@@ -221,10 +236,14 @@ export default function LoginPage() {
             <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={handleGoogleLogin}
+                className="flex text-black cursor-pointer items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.835 0 3.456.705 4.691 1.942l3.149-3.149A9.97 9.97 0 0012.545 2C7.021 2 2.545 6.477 2.545 12s4.476 10 10 10c5.523 0 10-4.477 10-10a9.967 9.967 0 00-2.195-6.285l-5.26 5.285z"/>
+                  <path
+                    fill="#EA4335"
+                    d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.835 0 3.456.705 4.691 1.942l3.149-3.149A9.97 9.97 0 0012.545 2C7.021 2 2.545 6.477 2.545 12s4.476 10 10 10c5.523 0 10-4.477 10-10a9.967 9.967 0 00-2.195-6.285l-5.26 5.285z"
+                  />
                 </svg>
                 Google
               </button>
@@ -233,7 +252,10 @@ export default function LoginPage() {
                 className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="#181717" d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/>
+                  <path
+                    fill="#181717"
+                    d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"
+                  />
                 </svg>
                 GitHub
               </button>
@@ -242,10 +264,7 @@ export default function LoginPage() {
 
           <motion.div variants={itemVariants} className="mt-8 text-center text-sm text-gray-600">
             New on our platform?{" "}
-            <Link 
-              href="/auth/signup" 
-              className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
-            >
+            <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
               Create account
             </Link>
           </motion.div>
