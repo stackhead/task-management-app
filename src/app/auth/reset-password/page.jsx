@@ -102,7 +102,8 @@ function ResetPasswordContent() {
         setLinkStatus("invalid")
         toast.error("Verification timed out. Please try again.")
       }
-    }, 15000) // 15 second timeout
+    }, 
+    60000) // 15 second timeout
 
     validateResetLink()
 
