@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Client, Account } from "appwrite"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
 import { FiLogIn, FiLoader, FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"
@@ -18,12 +18,10 @@ const client = new Client()
 
 const account = new Account(client)
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const error = searchParams.get("error")
-  const provider = searchParams.get("provider") || ""
-
+  const [error, setError] = useState(null)
+  const [provider, setProvider] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -44,6 +42,18 @@ export default function LoginPage() {
     hidden: { y: 20, opacity: 0 },
     visible: { y: 0, opacity: 1 },
   }
+
+  useEffect(() => {
+    // Parse query params on client side
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errorParam = params.get("error")
+      const providerParam = params.get("provider") || ""
+
+      setError(errorParam)
+      setProvider(providerParam)
+    }
+  }, [])
 
   // Show error message if redirected with error
   useEffect(() => {
@@ -148,25 +158,23 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex flex-col ">
      <div className="flex flex-row justify-between items-center px-4">
-  <Image
-    src={"/svgs/logo.svg"}
-    alt="Logo"
-    width={200}
-    height={200}
-  />
-  <div className="flex flex-row items-center  space-x-2"> {/* Added justify-center */}
-    <div className="text-gray-900">New to our platform?</div>
-    <Link href="/auth/signup">
-      <button className="text-white py-2 px-4 font-medium text-[16px] rounded-xl drop-shadow-2xl cursor-pointer shadow-indigo-800 bg-indigo-600 hover:bg-indigo-700 transition-colors">
-        Sign up
-      </button>
-    </Link>
-  </div>
-</div>
+      <Image
+        src={"/svgs/logo.svg"}
+        alt="Logo"
+        width={200}
+        height={200}
+      />
+      <div className="flex flex-row items-center space-x-2">
+        <div className="text-gray-900">New to our platform?</div>
+        <Link href="/auth/signup">
+          <button className="text-white py-2 px-4 font-medium text-[16px] rounded-xl drop-shadow-2xl cursor-pointer shadow-indigo-800 bg-indigo-600 hover:bg-indigo-700 transition-colors">
+            Sign up
+          </button>
+        </Link>
+      </div>
+    </div>
 
-
-
-    <div className=" bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -190,7 +198,6 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold">Welcome Back</h2>
             <p className="opacity-90">We're excited to see you again!</p>
           </div>
-         
         </div>
 
         {/* Form Section */}
@@ -319,5 +326,20 @@ export default function LoginPage() {
       </motion.div>
     </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
+          <p className="text-gray-700">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
