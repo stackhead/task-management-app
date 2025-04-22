@@ -1,5 +1,10 @@
 "use client"
+<<<<<<< Updated upstream
 import { useState, useEffect, useMemo, Suspense } from "react"
+=======
+
+import { useState, useEffect, useMemo } from "react"
+>>>>>>> Stashed changes
 import { account } from "@/components/services/appwrite"
 import { useRouter, useSearchParams } from "next/navigation"
 import toast, { Toaster } from "react-hot-toast"
@@ -7,76 +12,56 @@ import { FiLock, FiLoader, FiCheckCircle, FiEye, FiEyeOff, FiArrowLeft } from "r
 import { motion } from "framer-motion"
 import Link from "next/link"
 
+<<<<<<< Updated upstream
 function ResetPasswordContent() {
+=======
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      ease: "easeInOut",
+      duration: 0.3
+    }
+  }
+}
+
+export default function ResetPasswordPage() {
+>>>>>>> Stashed changes
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isValidLink, setIsValidLink] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [progress, setProgress] = useState(0)
+<<<<<<< Updated upstream
   const [linkStatus, setLinkStatus] = useState("verifying")
+=======
+  const [linkValid, setLinkValid] = useState(null)
+>>>>>>> Stashed changes
 
   // Get params from URL
   const userId = searchParams.get("userId")
   const secret = searchParams.get("secret")
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-  }
-
-  // Password strength validation
-  const validatePassword = (pass) => {
-    const hasMinLength = pass.length >= 8
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass)
-    const hasNumber = /\d/.test(pass)
-    const strength = [
-      hasMinLength,
-      hasSpecialChar,
-      hasNumber,
-      pass.length >= 12
-    ].filter(Boolean).length
-
-    const calculatedProgress = (strength / 4) * 100
-
-    if (!pass) return { progress: 0, message: "Password must be at least 8 characters", color: "text-red-400" }
-    if (!hasMinLength) return { progress: calculatedProgress, message: "Minimum 8 characters", color: "text-red-400" }
-
-    let message = "Good start"
-    let color = "text-yellow-600"
-
-    if (strength >= 3) {
-      message = "Strong password!"
-      color = "text-green-600"
-    } else if (strength >= 2) {
-      message = "Almost there - add one special character"
-      color = "text-yellow-600"
-    }
-
-    return { progress: calculatedProgress, message, color }
-  }
-
-  // Update progress when password changes
-  useEffect(() => {
-    const { progress } = validatePassword(password)
-    setProgress(progress)
-  }, [password])
-
-  const passwordValidation = useMemo(() => validatePassword(password), [password])
+  const expire = searchParams.get("expire")
 
   // Validate the reset link on component mount
   useEffect(() => {
+<<<<<<< Updated upstream
     const validateResetLink = async () => {
       if (!userId || !secret || secret.length > 256) {
         setLinkStatus("invalid")
@@ -112,18 +97,109 @@ function ResetPasswordContent() {
 
   useEffect(() => {
     if (linkStatus === "invalid") {
+=======
+    if (!userId || !secret) {
+      setLinkValid(false)
+>>>>>>> Stashed changes
       toast.error("Invalid reset link format")
       router.push("/auth/forgot-password")
-    } else if (linkStatus === "expired") {
-      toast.error("This reset link has expired or been used already")
-      router.push("/auth/forgot-password")
+      return
     }
-  }, [linkStatus, router])
+
+    // Corrected expiration check with 5 minute buffer
+    if (expire && Date.now() > (parseInt(expire) * 1000 + 300000)) {
+      setLinkValid(false)
+      toast.error("This reset link has expired")
+      router.push("/auth/forgot-password")
+      return
+    }
+
+    setLinkValid(true)
+  }, [userId, secret, expire, router])
+
+  // Password strength calculation
+    const validatePassword = (pass) => {
+      const hasMinLength = pass.length >= 8;
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+      const hasNumber = /\d/.test(pass);
+      const hasRequiredChar = hasSpecialChar || hasNumber;
+  
+      // Initial empty check
+      if (!pass) {
+          return {
+              progress: 0,
+              message: "Password must be 8 characters long and contain one special character or number",
+              color: "text-red-400",
+          };
+      }
+  
+      // Check minimum length first
+      if (!hasMinLength) {
+          return {
+              progress: (pass.length / 8) * 100,
+              message: "Minimum 8 characters required",
+              color: "text-red-400",
+          };
+      }
+  
+      // Check for at least one special character or number
+      if (!hasRequiredChar) {
+          return {
+              progress: 0,
+              message: "Must contain at least one number or special character",
+              color: "text-red-400",
+          };
+      }
+  
+      // Calculate strength only after basic requirements are met
+      const strengthFactors = [
+          hasSpecialChar && hasNumber,  // Both special and number
+          pass.length >= 12,            // Long password
+          /[A-Z]/.test(pass),           // Contains uppercase
+          /[a-z]/.test(pass)            // Contains lowercase
+      ].filter(Boolean).length;
+  
+      const calculatedProgress = (strengthFactors / 4) * 100;
+  
+      let message = "Good start";
+      let color = "text-yellow-600";
+  
+      if (strengthFactors >= 3) {
+          message = "Strong password!";
+          color = "text-green-600";
+      } else if (strengthFactors >= 2) {
+          message = "Almost there - try adding more complexity";
+          color = "text-yellow-600";
+      }
+  
+      return { 
+          progress: calculatedProgress, 
+          message, 
+          color 
+      };
+  };
+  
+    // Update progress only when password changes
+    useEffect(() => {
+      const { progress } = validatePassword(password)
+      setProgress(progress)
+    }, [password])
+  
+    // Memoize password validation
+    const passwordValidation = useMemo(() => {
+      return validatePassword(password)
+    }, [password])
+  
+  // Handle password reset
 
   const handleResetPassword = async (e) => {
     e.preventDefault()
 
+<<<<<<< Updated upstream
     if (!isValidLink) return
+=======
+    if (!linkValid) return
+>>>>>>> Stashed changes
     if (password !== confirmPassword) {
       toast.error("Passwords don't match")
       return
@@ -137,6 +213,7 @@ function ResetPasswordContent() {
     try {
       await account.updateRecovery(userId, secret, password, password)
 
+      // Delete all sessions after password reset
       try {
         await account.deleteSessions()
       } catch (error) {
@@ -145,11 +222,10 @@ function ResetPasswordContent() {
 
       toast.success("Password updated successfully! Please login with your new password")
       router.push("/auth/login")
-
     } catch (error) {
       console.error("Reset error:", error)
-      
-      if (error.message.includes('Invalid token')) {
+
+      if (error.message.includes('Invalid token') || error.message.includes('expired')) {
         toast.error("This link is no longer valid. Please request a new password reset.")
         router.push("/auth/forgot-password")
       } else {
@@ -160,19 +236,32 @@ function ResetPasswordContent() {
     }
   }
 
-  if (linkStatus !== "valid") {
+  // Loading state
+  if (linkValid === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
           <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            {linkStatus === "verifying" ? "Verifying reset link..." : "Invalid Link"}
-          </h2>
-          <p className="text-gray-600">
-            {linkStatus === "verifying" 
-              ? "Please wait while we verify your reset link"
-              : "Redirecting you to request a new link..."}
-          </p>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Verifying reset link...</h2>
+          <p className="text-gray-600">Please wait while we verify your reset link</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Invalid link state
+  if (linkValid === false) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Invalid Reset Link</h2>
+          <p className="text-gray-600 mb-6">The password reset link is invalid or has expired.</p>
+          <Link
+            href="/auth/forgot-password"
+            className="w-full flex justify-center items-center py-3 px-6 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+          >
+            Request New Reset Link
+          </Link>
         </div>
       </div>
     )
@@ -304,32 +393,8 @@ function ResetPasswordContent() {
               </button>
             </motion.div>
           </form>
-
-          {/* Support Section */}
-          <motion.div variants={itemVariants} className="mt-10 pt-6 border-t border-gray-200 text-center">
-            <h3 className="text-sm font-medium text-gray-600">Need help?</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Contact our <Link href="/support" className="text-indigo-600 hover:text-indigo-500">support team</Link>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">We're here to assist you 24/7</p>
-          </motion.div>
         </motion.div>
       </motion.div>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
-          <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Loading...</h2>
-        </div>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   )
 }

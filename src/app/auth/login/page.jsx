@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { Client, Account } from "appwrite"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import toast, { Toaster } from "react-hot-toast"
 import { FiLogIn, FiLoader, FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"
 import { motion } from "framer-motion"
 import { useGoogleAuth } from "../../../hooks/use-google-auth"
+import { useGithubAuth } from "../../../hooks/use-github-auth"
+import Image from 'next/image'
 
 // Initialize Appwrite client
 const client = new Client()
@@ -18,12 +20,17 @@ const account = new Account(client)
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+  const provider = searchParams.get("provider") || ""
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
   const { signInWithGoogle } = useGoogleAuth()
+  const { signInWithGithub } = useGithubAuth()
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -37,6 +44,15 @@ export default function LoginPage() {
     hidden: { y: 20, opacity: 0 },
     visible: { y: 0, opacity: 1 },
   }
+
+  // Show error message if redirected with error
+  useEffect(() => {
+    if (error === "authentication_failed") {
+      toast.error(`Authentication failed with ${provider || "provider"}. Please try again.`)
+    } else if (error === "account_not_found") {
+      toast.error("No account found with this email. Please sign up first.")
+    }
+  }, [error, provider])
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
@@ -76,10 +92,21 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithGoogle()
+      // Pass false to indicate this is a login (not signup)
+      await signInWithGoogle(false)
     } catch (error) {
       console.error("Google login error:", error)
       toast.error("Failed to sign in with Google. Please try again.")
+    }
+  }
+
+  const handleGithubLogin = async () => {
+    try {
+      // Pass false to indicate this is a login (not signup)
+      await signInWithGithub(false)
+    } catch (error) {
+      console.error("GitHub login error:", error)
+      toast.error("Failed to sign in with GitHub. Please try again.")
     }
   }
 
@@ -117,9 +144,29 @@ export default function LoginPage() {
       </div>
     )
   }
-
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex flex-col ">
+     <div className="flex flex-row justify-between items-center px-4">
+  <Image
+    src={"/svgs/logo.svg"}
+    alt="Logo"
+    width={200}
+    height={200}
+  />
+  <div className="flex flex-row items-center  space-x-2"> {/* Added justify-center */}
+    <div className="text-gray-900">New to our platform?</div>
+    <Link href="/auth/signup">
+      <button className="text-white py-2 px-4 font-medium text-[16px] rounded-xl drop-shadow-2xl cursor-pointer shadow-indigo-800 bg-indigo-600 hover:bg-indigo-700 transition-colors">
+        Sign up
+      </button>
+    </Link>
+  </div>
+</div>
+
+
+
+    <div className=" bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -138,14 +185,12 @@ export default function LoginPage() {
         className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row"
       >
         {/* Illustration Section */}
-        <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-blue-500 p-8 hidden md:flex flex-col justify-center">
+        <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-blue-500 p-8 hidden md:flex flex-col">
           <div className="space-y-4 text-white">
             <h2 className="text-3xl font-bold">Welcome Back</h2>
             <p className="opacity-90">We're excited to see you again!</p>
           </div>
-          <div className="mt-8 relative h-64">
-            <div className="absolute inset-0 bg-[url('/images/auth-illustration.svg')] bg-contain bg-no-repeat bg-center opacity-20" />
-          </div>
+         
         </div>
 
         {/* Form Section */}
@@ -190,7 +235,7 @@ export default function LoginPage() {
                   className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors"
                   onClick={togglePasswordVisibility}
                 >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                  {showPassword ? <FiEye /> : <FiEyeOff />}
                 </button>
               </div>
             </motion.div>
@@ -249,6 +294,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
+                onClick={handleGithubLogin}
                 className="flex cursor-pointer text-black items-center justify-center py-2.5 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -263,13 +309,15 @@ export default function LoginPage() {
           </form>
 
           <motion.div variants={itemVariants} className="mt-8 text-center text-sm text-gray-600">
-            New on our platform?{" "}
+           Need help? Contact our {" "}
             <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-              Create account
+               support team
             </Link>
+            <br/>we are available 24/7
           </motion.div>
         </motion.div>
       </motion.div>
+    </div>
     </div>
   )
 }

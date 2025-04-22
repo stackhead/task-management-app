@@ -1,11 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Client, Account, Databases } from "appwrite"
+import { Client, Account } from "appwrite"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from 'next/image'
 import toast, { Toaster } from "react-hot-toast"
 import { FiMail, FiLoader, FiArrowLeft } from "react-icons/fi"
+import { MdOutlineSendToMobile } from "react-icons/md";
+;
+
 import { motion } from "framer-motion"
 
 // Initialize Appwrite
@@ -14,7 +18,6 @@ const client = new Client()
   .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
 
 const account = new Account(client)
-const databases = new Databases(client)
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -31,14 +34,18 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true)
 
-    try {
-      // Directly create recovery without anonymous session
-      const resetUrl = `${window.location.origin}/auth/reset-password`
-      await account.createRecovery(email, resetUrl)
+  // Replace the existing try block with:
+try {
+  const resetUrl = `${window.location.origin}/auth/reset-password?userId={userId}&secret={secret}&expire={expire}`
+  await account.createRecovery(email, resetUrl)
 
-      toast.success("Password reset link sent to your email!")
-    } catch (error) {
-      console.error("Password reset error:", error)
+  toast.success("Password reset link sent to your email! Check your inbox.", {
+    duration: 4000
+  });
+
+  // Wait before redirecting
+  await new Promise(resolve => setTimeout(resolve, 2000));
+} catch (error) {
 
       // Specific error handling
       if (error.type === "user_invalid_credentials") {
@@ -52,9 +59,27 @@ export default function ForgotPasswordPage() {
       setIsLoading(false)
     }
   }
-
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex flex-col ">
+          <div className="flex flex-row justify-between items-center px-4">
+            <Image
+              src={"/svgs/logo.svg"}
+              alt="Logo"
+              width={200}
+              height={200}
+            />
+            <div className="flex flex-row items-center  space-x-2"> {/* Added justify-center */}
+              <div className="text-gray-900">Remember your password?</div>
+              <Link href="/auth/login">
+                <button className="text-white py-2 px-4 font-medium text-[16px] rounded-xl drop-shadow-2xl cursor-pointer shadow-indigo-800 bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                  Sign in
+                </button>
+              </Link>
+            </div>
+          </div>
+    <div className=" bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -122,27 +147,24 @@ export default function ForgotPasswordPage() {
                   Sending link...
                 </>
               ) : (
-                "Send Reset Link"
+                <>
+                                    <MdOutlineSendToMobile className="mr-2" />
+                                    Send reset link
+                                  </>
               )}
             </button>
           </form>
 
           <div className="mt-16 text-center text-sm text-gray-600">
-            Remember your password?{" "}
+            Need help ?  Contact our{" "}
             <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-              Sign in
+             support team
             </Link>
-          </div>
-
-          {/* Add additional content to increase height */}
-          <div className="mt-16 pt-8 border-t border-gray-100">
-            <div className="text-center text-sm text-gray-500">
-              <p className="mb-2">Need help? Contact our support team</p>
-              <p>We're here to assist you 24/7</p>
-            </div>
+           <br/>we are available 24/7  
           </div>
         </div>
       </motion.div>
+    </div>
     </div>
   )
 }

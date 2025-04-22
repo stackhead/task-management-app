@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: 'Task Pilot',
-  description: 'Kanban Task management app built with Next.js and Appwrite',
+  description: 'Task Pilot built with Next.js and Appwrite',
 };
 
 export default function RootLayout({ children }) {
