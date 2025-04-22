@@ -5,9 +5,6 @@ import {
   account,
   databases,
   ID,
-  DATABASE_ID,
-  COLUMNS_COLLECTION_ID,
-  TASKS_COLLECTION_ID,
   Query,
 } from "@/components/services/appwrite"
 import { DndProvider } from "react-dnd"
@@ -26,6 +23,11 @@ import CustomScrollbarStyles from "@/components/dashboard/CustomScrollbarStyles"
 import Navbar from "@/components/dashboard/Navbar"
 import Header from "@/components/dashboard/Header"
 import { COLOR_OPTIONS } from "@/components/dashboard/ColorPicker"
+
+// Define constants at the top level
+const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID
+const COLUMNS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID
+const TASKS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null)
@@ -55,7 +57,6 @@ export default function DashboardPage() {
   const [taskEta, setTaskEta] = useState("")
   const [taskColumnId, setTaskColumnId] = useState("")
   const [taskPriority, setTaskPriority] = useState("normal")
-  
 
   // Calculate board height on mount and window resize
   useEffect(() => {
@@ -79,42 +80,46 @@ export default function DashboardPage() {
 
   // Initialize theme from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem("kanban-theme")
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark")
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem("kanban-theme")
+      if (savedTheme) {
+        setIsDarkMode(savedTheme === "dark")
+      }
     }
   }, [])
 
   // Add animation keyframes to the document
   useEffect(() => {
-    // Add keyframes for animations if they don't exist
-    if (!document.getElementById("kanban-animations")) {
-      const style = document.createElement("style")
-      style.id = "kanban-animations"
-      style.innerHTML = `
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-pulse {
-          animation: pulse 0.5s ease-in-out 3;
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out forwards;
-        }
-      `
-      document.head.appendChild(style)
+    if (typeof document !== 'undefined') {
+      // Add keyframes for animations if they don't exist
+      if (!document.getElementById("kanban-animations")) {
+        const style = document.createElement("style")
+        style.id = "kanban-animations"
+        style.innerHTML = `
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+          .animate-pulse {
+            animation: pulse 0.5s ease-in-out 3;
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+          }
+          .animate-scaleIn {
+            animation: scaleIn 0.3s ease-out forwards;
+          }
+        `
+        document.head.appendChild(style)
+      }
     }
   }, [])
 
@@ -122,7 +127,9 @@ export default function DashboardPage() {
   const toggleTheme = () => {
     const newTheme = !isDarkMode
     setIsDarkMode(newTheme)
-    localStorage.setItem("kanban-theme", newTheme ? "dark" : "light")
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("kanban-theme", newTheme ? "dark" : "light")
+    }
   }
 
   // Fetch user, columns and tasks
@@ -440,4 +447,3 @@ export default function DashboardPage() {
     </DndProvider>
   )
 }
-
