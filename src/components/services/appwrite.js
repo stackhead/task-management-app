@@ -1,15 +1,27 @@
-import { Client, Account, Databases, ID ,Query } from "appwrite";
+import { Client, Account, Databases, ID, Query } from "appwrite"
 
+// Initialize variables
+let client
+let account
+let databases
 
-const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+// Only initialize on the client side
+if (typeof window !== "undefined") {
+  try {
+    client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
 
-export const account = new Account(client);
-export const databases = new Databases(client);
-export { ID, Query }; // ✅ Export correctly
-const DATABASE_ID = "67d121220014a612d627";  // Your database ID
-const COLUMNS_COLLECTION_ID = "67d12172003260976743";  // Your columns collection ID
-const TASKS_COLLECTION_ID = "67d1253a0012d54c26f1";  // Your tasks collection ID
+    account = new Account(client)
+    databases = new Databases(client)
+  } catch (error) {
+    console.error("Error initializing Appwrite client:", error)
+  }
+}
 
-export { DATABASE_ID, COLUMNS_COLLECTION_ID, TASKS_COLLECTION_ID };
+// Database and collection IDs
+const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "67d121220014a612d627"
+const COLUMNS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID || "67d12172003260976743"
+const TASKS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID || "67d1253a0012d54c26f1"
+
+export { client, account, databases, ID, Query, DATABASE_ID, COLUMNS_COLLECTION_ID, TASKS_COLLECTION_ID }

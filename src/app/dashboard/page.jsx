@@ -1,10 +1,19 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
+import {
+  account,
+  databases,
+  ID,
+  DATABASE_ID,
+  COLUMNS_COLLECTION_ID,
+  TASKS_COLLECTION_ID,
+  Query,
+} from "@/components/services/appwrite"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 
-// Import components
+// Import refactored components
 import Column from "@/components/dashboard/Column"
 import Modal from "@/components/dashboard/Modal"
 import TaskViewModal from "@/components/dashboard/TaskViewModal"
@@ -27,7 +36,7 @@ export default function DashboardPage() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [boardHeight, setBoardHeight] = useState("calc(100vh - 180px)")
 
-  // Refs
+  // Ref for the container
   const containerRef = useRef(null)
 
   // Modal states
@@ -46,121 +55,114 @@ export default function DashboardPage() {
   const [taskEta, setTaskEta] = useState("")
   const [taskColumnId, setTaskColumnId] = useState("")
   const [taskPriority, setTaskPriority] = useState("normal")
+  
 
-  // Initialize Appwrite client only on client side
-  const getAppwriteClient = useCallback(async () => {
-    if (typeof window === 'undefined') return { account: null, databases: null };
-    
-    const { Client, Account, Databases, ID, Query } = await import("appwrite");
-    
-    const client = new Client()
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID);
-
-    return {
-      account: new Account(client),
-      databases: new Databases(client),
-      ID,
-      Query
-    };
-  }, []);
-
-  // Calculate board height
+  // Calculate board height on mount and window resize
   useEffect(() => {
     const calculateHeight = () => {
       if (containerRef.current) {
         const navHeight = document.querySelector("nav")?.offsetHeight || 0
-        const headerHeight = 120
+        const headerHeight = 120 // Approximate header height
         const windowHeight = window.innerHeight
-        const newHeight = windowHeight - navHeight - headerHeight - 50
+        const newHeight = windowHeight - navHeight - headerHeight - 50 // 50px buffer
         setBoardHeight(`${newHeight}px`)
       }
     }
 
-    if (typeof window !== 'undefined') {
-      calculateHeight()
-      window.addEventListener("resize", calculateHeight)
-    }
+    calculateHeight()
+    window.addEventListener("resize", calculateHeight)
 
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener("resize", calculateHeight)
-      }
+      window.removeEventListener("resize", calculateHeight)
     }
   }, [])
 
-  // Initialize theme
+  // Initialize theme from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem("kanban-theme")
-      setIsDarkMode(savedTheme ? savedTheme === "dark" : true)
+    const savedTheme = localStorage.getItem("kanban-theme")
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "dark")
     }
   }, [])
 
-  // Add animations
+  // Add animation keyframes to the document
   useEffect(() => {
-    if (typeof document !== 'undefined' && !document.getElementById("kanban-animations")) {
+    // Add keyframes for animations if they don't exist
+    if (!document.getElementById("kanban-animations")) {
       const style = document.createElement("style")
       style.id = "kanban-animations"
       style.innerHTML = `
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .animate-pulse { animation: pulse 0.5s ease-in-out 3; }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-        .animate-scaleIn { animation: scaleIn 0.3s ease-out forwards; }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-pulse {
+          animation: pulse 0.5s ease-in-out 3;
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out forwards;
+        }
       `
       document.head.appendChild(style)
     }
   }, [])
 
-  // Toggle theme
+  // Toggle theme function
   const toggleTheme = () => {
     const newTheme = !isDarkMode
     setIsDarkMode(newTheme)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem("kanban-theme", newTheme ? "dark" : "light")
-    }
+    localStorage.setItem("kanban-theme", newTheme ? "dark" : "light")
   }
 
-  // Fetch data
+  // Fetch user, columns and tasks
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const { account, databases, Query } = await getAppwriteClient()
 
-        if (!account || !databases) {
-          throw new Error("Appwrite client not initialized")
-        }
-
+        // Fetch user
         const loggedInUser = await account.get()
         setUser(loggedInUser)
 
-        const columnsResponse = await databases.listDocuments(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID,
-          [Query.equal("userId", loggedInUser.$id)]
-        )
+        try {
+          // Fetch columns
+          const columnsResponse = await databases.listDocuments(DATABASE_ID, COLUMNS_COLLECTION_ID, [
+            Query.equal("userId", loggedInUser.$id),
+          ])
 
-        const tasksResponse = await databases.listDocuments(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-          [Query.equal("userId", loggedInUser.$id)]
-        )
+          setColumns(columnsResponse.documents)
 
-        setColumns(columnsResponse.documents)
-        setTasks(tasksResponse.documents)
-      } catch (err) {
-        console.error("Error fetching data:", err)
-        setError(err.message || "Failed to load data. Please try again.")
+          // Fetch tasks
+          const tasksResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID, [
+            Query.equal("userId", loggedInUser.$id),
+          ])
+
+          setTasks(tasksResponse.documents)
+        } catch (dataError) {
+          console.error("Error fetching data:", dataError)
+          setError("Failed to load your board data. Please try again later.")
+        }
+      } catch (userError) {
+        console.error("Unable to fetch user:", userError)
+        setError("Failed to authenticate. Please log in again.")
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [getAppwriteClient])
+  }, [])
 
   // Column functions
   const openAddColumnModal = () => {
@@ -179,56 +181,53 @@ export default function DashboardPage() {
 
   const handleColumnSubmit = async (e) => {
     e.preventDefault()
+
     try {
-      const { databases, ID } = await getAppwriteClient()
-      
       if (currentColumn) {
-        const updatedColumn = await databases.updateDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID,
-          currentColumn.$id,
-          { name: columnName, color: columnColor }
-        )
-        setColumns(columns.map(col => col.$id === updatedColumn.$id ? updatedColumn : col))
+        // Update existing column
+        const updatedColumn = await databases.updateDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, currentColumn.$id, {
+          name: columnName,
+          color: columnColor,
+        })
+
+        setColumns(columns.map((col) => (col.$id === updatedColumn.$id ? updatedColumn : col)))
       } else {
-        const newColumn = await databases.createDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID,
-          ID.unique(),
-          { name: columnName, color: columnColor, userId: user.$id }
-        )
-        setColumns([...columns, { ...newColumn, _isNew: true }])
+        // Create new column
+        const newColumn = await databases.createDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, ID.unique(), {
+          name: columnName,
+          color: columnColor,
+          userId: user.$id,
+        })
+
+        // Add isNew flag for animation
+        const columnWithAnimation = { ...newColumn, _isNew: true }
+        setColumns([...columns, columnWithAnimation])
       }
+
       setIsColumnModalOpen(false)
     } catch (error) {
       console.error("Error saving column:", error)
-      alert("Failed to save column. Please try again.")
+      alert("The current user is not authorized to perform the requested action log in first.")
     }
   }
 
   const deleteColumn = async (columnId) => {
-    if (confirm("Delete this column and all its tasks?")) {
+    if (confirm("Are you sure you want to delete this column? All tasks in this column will be deleted.")) {
       try {
-        const { databases } = await getAppwriteClient()
-        await databases.deleteDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_COLUMNS_COLLECTION_ID,
-          columnId
-        )
-        
-        setColumns(columns.filter(col => col.$id !== columnId))
-        
-        // Delete associated tasks
-        const columnTasks = tasks.filter(task => task.status === columnId)
+        // Delete the column
+        await databases.deleteDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, columnId)
+
+        // Update state
+        setColumns(columns.filter((col) => col.$id !== columnId))
+
+        // Delete all tasks in this column
+        const columnTasks = tasks.filter((task) => task.status === columnId)
+
         for (const task of columnTasks) {
-          await databases.deleteDocument(
-            process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-            process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-            task.$id
-          )
+          await databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, task.$id)
         }
-        
-        setTasks(tasks.filter(task => task.status !== columnId))
+
+        setTasks(tasks.filter((task) => task.status !== columnId))
       } catch (error) {
         console.error("Error deleting column:", error)
         alert("Failed to delete column. Please try again.")
@@ -264,39 +263,35 @@ export default function DashboardPage() {
 
   const handleTaskSubmit = async (e) => {
     e.preventDefault()
+
     try {
-      const { databases, ID } = await getAppwriteClient()
-      
       if (currentTask) {
-        const updatedTask = await databases.updateDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-          currentTask.$id,
-          {
-            title: taskTitle,
-            description: taskDescription,
-            eta: taskEta,
-            status: taskColumnId,
-            priority: taskPriority
-          }
-        )
-        setTasks(tasks.map(task => task.$id === updatedTask.$id ? updatedTask : task))
+        // Update existing task
+        const updatedTask = await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, currentTask.$id, {
+          title: taskTitle,
+          description: taskDescription,
+          eta: taskEta,
+          status: taskColumnId,
+          priority: taskPriority,
+        })
+
+        setTasks(tasks.map((task) => (task.$id === updatedTask.$id ? updatedTask : task)))
       } else {
-        const newTask = await databases.createDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-          ID.unique(),
-          {
-            title: taskTitle,
-            description: taskDescription,
-            eta: taskEta,
-            status: taskColumnId,
-            priority: taskPriority,
-            userId: user.$id
-          }
-        )
-        setTasks([...tasks, { ...newTask, _isNew: true }])
+        // Create new task
+        const newTask = await databases.createDocument(DATABASE_ID, TASKS_COLLECTION_ID, ID.unique(), {
+          title: taskTitle,
+          description: taskDescription,
+          eta: taskEta,
+          status: taskColumnId,
+          priority: taskPriority,
+          userId: user.$id,
+        })
+
+        // Add isNew flag for animation
+        const taskWithAnimation = { ...newTask, _isNew: true }
+        setTasks([...tasks, taskWithAnimation])
       }
+
       setIsTaskModalOpen(false)
     } catch (error) {
       console.error("Error saving task:", error)
@@ -305,15 +300,13 @@ export default function DashboardPage() {
   }
 
   const deleteTask = async (taskId) => {
-    if (confirm("Delete this task?")) {
+    if (confirm("Are you sure you want to delete this task?")) {
       try {
-        const { databases } = await getAppwriteClient()
-        await databases.deleteDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-          taskId
-        )
-        setTasks(tasks.filter(task => task.$id !== taskId))
+        // Delete the task
+        await databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, taskId)
+
+        // Update state
+        setTasks(tasks.filter((task) => task.$id !== taskId))
       } catch (error) {
         console.error("Error deleting task:", error)
         alert("Failed to delete task. Please try again.")
@@ -321,42 +314,55 @@ export default function DashboardPage() {
     }
   }
 
-  const moveTask = useCallback(async (taskId, sourceColumnId, targetColumnId) => {
-    if (sourceColumnId !== targetColumnId) {
-      try {
-        const { databases } = await getAppwriteClient()
-        const task = tasks.find(t => t.$id === taskId)
-        if (!task) return
-        
-        const updatedTask = await databases.updateDocument(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-          process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID,
-          taskId,
-          { status: targetColumnId }
-        )
-        setTasks(prevTasks => prevTasks.map(t => t.$id === taskId ? updatedTask : t))
-      } catch (error) {
-        console.error("Error moving task:", error)
-        setTasks(prevTasks => [...prevTasks])
-      }
-    }
-  }, [tasks, getAppwriteClient])
+  const moveTask = useCallback(
+    async (taskId, sourceColumnId, targetColumnId) => {
+      if (sourceColumnId !== targetColumnId) {
+        try {
+          // Find the task
+          const task = tasks.find((t) => t.$id === taskId)
 
-  if (loading) return <LoadingState isDarkMode={isDarkMode} />
-  if (error) return <ErrorState error={error} isDarkMode={isDarkMode} />
+          if (!task) return
+
+          // Update the task in the database
+          const updatedTask = await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, taskId, {
+            status: targetColumnId,
+          })
+
+          // Update state
+          setTasks((prevTasks) => prevTasks.map((t) => (t.$id === taskId ? updatedTask : t)))
+        } catch (error) {
+          console.error("Error moving task:", error)
+          // Revert the UI change if the API call fails
+          setTasks((prevTasks) => [...prevTasks])
+        }
+      }
+    },
+    [tasks],
+  )
+
+  if (loading) {
+    return <LoadingState isDarkMode={isDarkMode} />
+  }
+
+  if (error) {
+    return <ErrorState error={error} isDarkMode={isDarkMode} />
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
       <CustomScrollbarStyles isDarkMode={isDarkMode} />
+
       <div className={`min-h-screen ${isDarkMode ? "bg-[#0D1117]" : "bg-gray-50"}`}>
         <Navbar user={user} isDarkMode={isDarkMode} />
+
         <div className="md:p-6 p-4" ref={containerRef}>
           <Header toggleTheme={toggleTheme} openAddColumnModal={openAddColumnModal} isDarkMode={isDarkMode} />
+
           {columns.length === 0 ? (
             <EmptyState openAddColumnModal={openAddColumnModal} isDarkMode={isDarkMode} />
           ) : (
             <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide" style={{ height: boardHeight }}>
-              {columns.map(column => (
+              {columns.map((column) => (
                 <Column
                   key={column.$id}
                   column={column}
@@ -369,15 +375,20 @@ export default function DashboardPage() {
                   onEditColumn={openEditColumnModal}
                   moveTask={moveTask}
                   isDarkMode={isDarkMode}
-                  isNew={column._isNew}
+                  isNew={column._isNew} // Pass isNew flag to column
                 />
               ))}
             </div>
           )}
         </div>
 
-        <Modal isOpen={isColumnModalOpen} onClose={() => setIsColumnModalOpen(false)} 
-               title={currentColumn ? "Edit Column" : "Add Column"} isDarkMode={isDarkMode}>
+        {/* Column Modal */}
+        <Modal
+          isOpen={isColumnModalOpen}
+          onClose={() => setIsColumnModalOpen(false)}
+          title={currentColumn ? `Edit Column` : "Add Column"}
+          isDarkMode={isDarkMode}
+        >
           <ColumnForm
             columnName={columnName}
             setColumnName={setColumnName}
@@ -390,8 +401,13 @@ export default function DashboardPage() {
           />
         </Modal>
 
-        <Modal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} 
-               title={currentTask ? "Edit Task" : "Add Task"} isDarkMode={isDarkMode}>
+        {/* Task Modal */}
+        <Modal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          title={currentTask ? "Edit Task" : "Add Task"}
+          isDarkMode={isDarkMode}
+        >
           <TaskForm
             taskTitle={taskTitle}
             setTaskTitle={setTaskTitle}
@@ -411,6 +427,7 @@ export default function DashboardPage() {
           />
         </Modal>
 
+        {/* Task View Modal */}
         <TaskViewModal
           isOpen={isTaskViewModalOpen}
           onClose={() => setIsTaskViewModalOpen(false)}
