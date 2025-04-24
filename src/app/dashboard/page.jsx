@@ -375,7 +375,7 @@ export default function DashboardPage() {
                   onEditColumn={openEditColumnModal}
                   moveTask={moveTask}
                   isDarkMode={isDarkMode}
-                  isNew={column._isNew} // Pass isNew flag to column
+                  isNew={column._isNew} // Pass is New flag to column yes
                 />
               ))}
             </div>
