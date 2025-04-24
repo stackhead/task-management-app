@@ -1,26 +1,32 @@
-import { SiMailchimp } from "react-icons/si"
-import LogoutButton from "./LogoutButton"
+import { SiMailchimp } from "react-icons/si";
+import LogoutButton from "./LogoutButton";
 
 const Navbar = ({ user, isDarkMode }) => {
   return (
     <nav
-      className={`flex justify-between items-center p-3 md:p-4 sticky top-0 left-0 right-0 ${
+      className={`flex justify-between items-center px-4 py-3 md:px-6 sticky top-0 left-0 right-0 ${
         isDarkMode ? "bg-[#010409] border-gray-800" : "bg-white border-gray-200"
-      } backdrop-blur-3xl border-b shadow-md z-10`}
+      } border-b backdrop-blur-lg z-50 transition-colors duration-300`}
     >
-      <h1 className={`text-[20px] font-medium ${isDarkMode ? "text-gray-100" : "text-gray-800"} truncate max-w-[70%]`}>
-        {user ? (
-          <>
-            Welcome, {user.name} <SiMailchimp className="inline ml-2" />
-          </>
-        ) : (
-          "Loading..."
+      <div className="flex items-center space-x-2">
+        <SiMailchimp 
+          className={`text-xl ${isDarkMode ? "text-blue-400" : "text-blue-600"} transition-transform hover:scale-110`} 
+        />
+        <h1 className={`text-lg font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-800"} truncate max-w-[180px] md:max-w-[260px]`}>
+          {user ? `Welcome, ${user.name}` : "Loading..."}
+        </h1>
+      </div>
+      
+      <div className="flex items-center space-x-4">
+        {user && (
+          <span className={`hidden md:inline text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+            {user.email}
+          </span>
         )}
-      </h1>
-      <LogoutButton isDarkMode={isDarkMode} />
+        <LogoutButton isDarkMode={isDarkMode} />
+      </div>
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
-
+export default Navbar;

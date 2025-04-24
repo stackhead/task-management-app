@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import ColorPicker from "./ColorPicker"
 
 const ColumnForm = ({
@@ -12,14 +13,16 @@ const ColumnForm = ({
   currentColumn,
   isDarkMode,
 }) => {
+  const [showCustomColorPicker, setShowCustomColorPicker] = useState(false)
+  const [customColor, setCustomColor] = useState("#3b82f6") // Default blue color
+
+  const handleCustomColorSelect = () => {
+    setColumnColor(customColor)
+    setShowCustomColorPicker(false)
+  }
+
   return (
     <form onSubmit={onSubmit}>
-      <div className="mb-2 md:mb-4">
-        <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
-          Color
-        </label>
-        <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
-      </div>
       <div className="mb-4">
         <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
           Column Name
@@ -35,6 +38,56 @@ const ColumnForm = ({
           } border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-600`}
           required
         />
+      </div>
+
+      <div className="mb-2 md:mb-4">
+        <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+          Color
+        </label>
+        
+        <div className="flex items-center gap-3">
+          <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
+          
+          {/* Custom Color Circle */}
+          <div 
+            className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer"
+            style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
+            onClick={() => setShowCustomColorPicker(!showCustomColorPicker)}
+          >
+            <div 
+              className="w-6 h-6 rounded-full"
+              style={{ backgroundColor: customColor }}
+            />
+          </div>
+        </div>
+
+        {/* Custom Color Picker */}
+        {showCustomColorPicker && (
+          <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="color"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-10 h-10 cursor-pointer"
+              />
+              <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {customColor}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCustomColorSelect}
+              className={`px-3 py-1 text-sm rounded-md ${
+                isDarkMode 
+                  ? "bg-gray-600 hover:bg-gray-500 text-white" 
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+              }`}
+            >
+              Apply Custom Color
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">
@@ -61,4 +114,3 @@ const ColumnForm = ({
 }
 
 export default ColumnForm
-

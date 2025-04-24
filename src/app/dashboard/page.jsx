@@ -352,7 +352,7 @@ export default function DashboardPage() {
     <DndProvider backend={HTML5Backend}>
       <CustomScrollbarStyles isDarkMode={isDarkMode} />
 
-      <div className={`min-h-screen ${isDarkMode ? "bg-[#0D1117]" : "bg-gray-50"}`}>
+      <div className={`min-h-screen ${isDarkMode ? "bg-[#0D1117]" : "bg-gradient-to-br from-indigo-50 to-blue-50"}`}>
         <Navbar user={user} isDarkMode={isDarkMode} />
 
         <div className="md:p-6 p-4" ref={containerRef}>
@@ -378,6 +378,7 @@ export default function DashboardPage() {
                   isNew={column._isNew} // Pass is New flag to column yes
                 />
               ))}
+              
             </div>
           )}
         </div>
