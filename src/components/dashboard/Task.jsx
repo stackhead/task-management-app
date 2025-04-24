@@ -42,11 +42,11 @@ const Task = ({ task, onDelete, onEdit, onView, isNew = false, isDarkMode }) => 
   return (
     <div
       ref={drag}
-      className={`p-3 mb-2 ${isDarkMode ? "bg-[#151B23] border-gray-700" : "bg-white border-gray-200"} 
+      className={`p-3 mb-2 ${isDarkMode ? "bg-[#1a212b] border-gray-700" : "bg-white border-gray-200"} 
         rounded-md shadow border ${isDragging ? "opacity-50" : "opacity-100"}
         ${animate ? "animate-pulse" : ""}
         transition-all duration-200 hover:shadow-md`}
-      style={{ cursor: "move" }}
+      style={{ cursor: "pointer" }}
       onClick={(e) => {
         // Only trigger view if not clicking on buttons
         if (!e.target.closest("button")) {
