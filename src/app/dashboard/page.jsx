@@ -1,10 +1,19 @@
 "use client"
-import { useEffect, useState, useCallback, useRef, Suspense } from "react"
+
+import { useEffect, useState, useCallback, useRef } from "react"
+import {
+  account,
+  databases,
+  ID,
+  DATABASE_ID,
+  COLUMNS_COLLECTION_ID,
+  TASKS_COLLECTION_ID,
+  Query,
+} from "@/components/services/appwrite"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
-import { Client, Account, Databases, ID, Query } from "appwrite"
 
-// Import components
+// Import refactored components
 import Column from "@/components/dashboard/Column"
 import Modal from "@/components/dashboard/Modal"
 import TaskViewModal from "@/components/dashboard/TaskViewModal"
@@ -18,28 +27,7 @@ import Navbar from "@/components/dashboard/Navbar"
 import Header from "@/components/dashboard/Header"
 import { COLOR_OPTIONS } from "@/components/dashboard/ColorPicker"
 
-// Initialize Appwrite client outside the component
-const getAppwriteClient = () => {
-  if (typeof window !== 'undefined') {
-    const client = new Client()
-      .setEndpoint("https://cloud.appwrite.io/v1")
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
-    
-    return {
-      account: new Account(client),
-      databases: new Databases(client)
-    }
-  }
-  return null
-}
-
-// Constants
-const DATABASE_ID = process.env.NEXT_PUBLIC_DATABASE_ID || ""
-const COLUMNS_COLLECTION_ID = process.env.NEXT_PUBLIC_COLUMNS_COLLECTION_ID || ""
-const TASKS_COLLECTION_ID = process.env.NEXT_PUBLIC_TASKS_COLLECTION_ID || ""
-
-function DashboardContent() {
-  const [appwrite, setAppwrite] = useState(null)
+export default function DashboardPage() {
   const [user, setUser] = useState(null)
   const [columns, setColumns] = useState([])
   const [tasks, setTasks] = useState([])
@@ -67,11 +55,7 @@ function DashboardContent() {
   const [taskEta, setTaskEta] = useState("")
   const [taskColumnId, setTaskColumnId] = useState("")
   const [taskPriority, setTaskPriority] = useState("normal")
-
-  // Initialize Appwrite client on client-side only
-  useEffect(() => {
-    setAppwrite(getAppwriteClient())
-  }, [])
+  
 
   // Calculate board height on mount and window resize
   useEffect(() => {
@@ -144,31 +128,25 @@ function DashboardContent() {
   // Fetch user, columns and tasks
   useEffect(() => {
     const fetchData = async () => {
-      if (!appwrite) return
-
       try {
         setLoading(true)
 
         // Fetch user
-        const loggedInUser = await appwrite.account.get()
+        const loggedInUser = await account.get()
         setUser(loggedInUser)
 
         try {
           // Fetch columns
-          const columnsResponse = await appwrite.databases.listDocuments(
-            DATABASE_ID, 
-            COLUMNS_COLLECTION_ID, 
-            [Query.equal("userId", loggedInUser.$id)]
-          )
+          const columnsResponse = await databases.listDocuments(DATABASE_ID, COLUMNS_COLLECTION_ID, [
+            Query.equal("userId", loggedInUser.$id),
+          ])
 
           setColumns(columnsResponse.documents)
 
           // Fetch tasks
-          const tasksResponse = await appwrite.databases.listDocuments(
-            DATABASE_ID, 
-            TASKS_COLLECTION_ID, 
-            [Query.equal("userId", loggedInUser.$id)]
-          )
+          const tasksResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID, [
+            Query.equal("userId", loggedInUser.$id),
+          ])
 
           setTasks(tasksResponse.documents)
         } catch (dataError) {
@@ -184,7 +162,7 @@ function DashboardContent() {
     }
 
     fetchData()
-  }, [appwrite])
+  }, [])
 
   // Column functions
   const openAddColumnModal = () => {
@@ -203,34 +181,23 @@ function DashboardContent() {
 
   const handleColumnSubmit = async (e) => {
     e.preventDefault()
-    if (!appwrite) return
 
     try {
       if (currentColumn) {
         // Update existing column
-        const updatedColumn = await appwrite.databases.updateDocument(
-          DATABASE_ID, 
-          COLUMNS_COLLECTION_ID, 
-          currentColumn.$id, 
-          {
-            name: columnName,
-            color: columnColor,
-          }
-        )
+        const updatedColumn = await databases.updateDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, currentColumn.$id, {
+          name: columnName,
+          color: columnColor,
+        })
 
         setColumns(columns.map((col) => (col.$id === updatedColumn.$id ? updatedColumn : col)))
       } else {
         // Create new column
-        const newColumn = await appwrite.databases.createDocument(
-          DATABASE_ID, 
-          COLUMNS_COLLECTION_ID, 
-          ID.unique(), 
-          {
-            name: columnName,
-            color: columnColor,
-            userId: user.$id,
-          }
-        )
+        const newColumn = await databases.createDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, ID.unique(), {
+          name: columnName,
+          color: columnColor,
+          userId: user.$id,
+        })
 
         // Add isNew flag for animation
         const columnWithAnimation = { ...newColumn, _isNew: true }
@@ -245,11 +212,10 @@ function DashboardContent() {
   }
 
   const deleteColumn = async (columnId) => {
-    if (!appwrite) return
     if (confirm("Are you sure you want to delete this column? All tasks in this column will be deleted.")) {
       try {
         // Delete the column
-        await appwrite.databases.deleteDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, columnId)
+        await databases.deleteDocument(DATABASE_ID, COLUMNS_COLLECTION_ID, columnId)
 
         // Update state
         setColumns(columns.filter((col) => col.$id !== columnId))
@@ -258,7 +224,7 @@ function DashboardContent() {
         const columnTasks = tasks.filter((task) => task.status === columnId)
 
         for (const task of columnTasks) {
-          await appwrite.databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, task.$id)
+          await databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, task.$id)
         }
 
         setTasks(tasks.filter((task) => task.status !== columnId))
@@ -297,40 +263,29 @@ function DashboardContent() {
 
   const handleTaskSubmit = async (e) => {
     e.preventDefault()
-    if (!appwrite) return
 
     try {
       if (currentTask) {
         // Update existing task
-        const updatedTask = await appwrite.databases.updateDocument(
-          DATABASE_ID, 
-          TASKS_COLLECTION_ID, 
-          currentTask.$id, 
-          {
-            title: taskTitle,
-            description: taskDescription,
-            eta: taskEta,
-            status: taskColumnId,
-            priority: taskPriority,
-          }
-        )
+        const updatedTask = await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, currentTask.$id, {
+          title: taskTitle,
+          description: taskDescription,
+          eta: taskEta,
+          status: taskColumnId,
+          priority: taskPriority,
+        })
 
         setTasks(tasks.map((task) => (task.$id === updatedTask.$id ? updatedTask : task)))
       } else {
         // Create new task
-        const newTask = await appwrite.databases.createDocument(
-          DATABASE_ID, 
-          TASKS_COLLECTION_ID, 
-          ID.unique(), 
-          {
-            title: taskTitle,
-            description: taskDescription,
-            eta: taskEta,
-            status: taskColumnId,
-            priority: taskPriority,
-            userId: user.$id,
-          }
-        )
+        const newTask = await databases.createDocument(DATABASE_ID, TASKS_COLLECTION_ID, ID.unique(), {
+          title: taskTitle,
+          description: taskDescription,
+          eta: taskEta,
+          status: taskColumnId,
+          priority: taskPriority,
+          userId: user.$id,
+        })
 
         // Add isNew flag for animation
         const taskWithAnimation = { ...newTask, _isNew: true }
@@ -345,11 +300,10 @@ function DashboardContent() {
   }
 
   const deleteTask = async (taskId) => {
-    if (!appwrite) return
     if (confirm("Are you sure you want to delete this task?")) {
       try {
         // Delete the task
-        await appwrite.databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, taskId)
+        await databases.deleteDocument(DATABASE_ID, TASKS_COLLECTION_ID, taskId)
 
         // Update state
         setTasks(tasks.filter((task) => task.$id !== taskId))
@@ -362,7 +316,6 @@ function DashboardContent() {
 
   const moveTask = useCallback(
     async (taskId, sourceColumnId, targetColumnId) => {
-      if (!appwrite) return
       if (sourceColumnId !== targetColumnId) {
         try {
           // Find the task
@@ -371,14 +324,9 @@ function DashboardContent() {
           if (!task) return
 
           // Update the task in the database
-          const updatedTask = await appwrite.databases.updateDocument(
-            DATABASE_ID, 
-            TASKS_COLLECTION_ID, 
-            taskId, 
-            {
-              status: targetColumnId,
-            }
-          )
+          const updatedTask = await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, taskId, {
+            status: targetColumnId,
+          })
 
           // Update state
           setTasks((prevTasks) => prevTasks.map((t) => (t.$id === taskId ? updatedTask : t)))
@@ -389,7 +337,7 @@ function DashboardContent() {
         }
       }
     },
-    [tasks, appwrite],
+    [tasks],
   )
 
   if (loading) {
@@ -427,7 +375,7 @@ function DashboardContent() {
                   onEditColumn={openEditColumnModal}
                   moveTask={moveTask}
                   isDarkMode={isDarkMode}
-                  isNew={column._isNew} // Pass isNew flag to column
+                  isNew={column._isNew} // Pass is New flag to column yes
                 />
               ))}
             </div>
@@ -490,13 +438,5 @@ function DashboardContent() {
         />
       </div>
     </DndProvider>
-  )
-}
-
-export default function DashboardPage() {
-  return (
-    <Suspense fallback={<LoadingState />}>
-      <DashboardContent />
-    </Suspense>
   )
 }

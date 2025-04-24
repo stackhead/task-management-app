@@ -9,7 +9,7 @@ import Link from "next/link"
 
 // Initialize Appwrite client outside the component
 const getAppwriteClient = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const client = new Client()
       .setEndpoint("https://cloud.appwrite.io/v1")
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
@@ -58,12 +58,7 @@ function ResetPasswordContent() {
     const hasMinLength = pass.length >= 8
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass)
     const hasNumber = /\d/.test(pass)
-    const strength = [
-      hasMinLength,
-      hasSpecialChar,
-      hasNumber,
-      pass.length >= 12
-    ].filter(Boolean).length
+    const strength = [hasMinLength, hasSpecialChar, hasNumber, pass.length >= 12].filter(Boolean).length
 
     const calculatedProgress = (strength / 4) * 100
 
@@ -97,23 +92,14 @@ function ResetPasswordContent() {
     if (!account) return
 
     const validateResetLink = async () => {
-      if (!userId || !secret || secret.length > 256) {
+      if (!userId || !secret) {
         setLinkStatus("invalid")
         return
       }
 
-      try {
-        await account.updateRecovery(userId, secret, "dummyPassword", "dummyPassword")
-        setLinkStatus("valid")
-        setIsValidLink(true)
-      } catch (error) {
-        if (error.message.includes('Invalid token') || error.message.includes('expired')) {
-          setLinkStatus("expired")
-        } else {
-          setLinkStatus("valid")
-          setIsValidLink(true)
-        }
-      }
+      // Don't try to validate with a dummy password - just check if the parameters exist
+      setLinkStatus("valid")
+      setIsValidLink(true)
     }
 
     const timeoutId = setTimeout(() => {
@@ -163,11 +149,10 @@ function ResetPasswordContent() {
 
       toast.success("Password updated successfully! Please login with your new password")
       router.push("/auth/login")
-
     } catch (error) {
       console.error("Reset error:", error)
-      
-      if (error.message.includes('Invalid token')) {
+
+      if (error.message.includes("Invalid token")) {
         toast.error("This link is no longer valid. Please request a new password reset.")
         router.push("/auth/forgot-password")
       } else {
@@ -187,7 +172,7 @@ function ResetPasswordContent() {
             {linkStatus === "verifying" ? "Verifying reset link..." : "Invalid Link"}
           </h2>
           <p className="text-gray-600">
-            {linkStatus === "verifying" 
+            {linkStatus === "verifying"
               ? "Please wait while we verify your reset link"
               : "Redirecting you to request a new link..."}
           </p>
@@ -202,10 +187,10 @@ function ResetPasswordContent() {
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: '12px',
-            background: '#fff',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            color: '#1a1a1a',
+            borderRadius: "12px",
+            background: "#fff",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            color: "#1a1a1a",
           },
         }}
       />
@@ -266,16 +251,11 @@ function ResetPasswordContent() {
                     className="h-full transition-all duration-500 ease-out"
                     style={{
                       width: `${progress}%`,
-                      backgroundColor:
-                        progress < 50 ? '#f59e0b' :
-                          progress < 75 ? '#3b82f6' :
-                            '#10b981'
+                      backgroundColor: progress < 50 ? "#f59e0b" : progress < 75 ? "#3b82f6" : "#10b981",
                     }}
                   />
                 </div>
-                <p className={`text-sm mt-1 ${passwordValidation.color}`}>
-                  {passwordValidation.message}
-                </p>
+                <p className={`text-sm mt-1 ${passwordValidation.color}`}>{passwordValidation.message}</p>
               </div>
             </motion.div>
 
@@ -305,8 +285,9 @@ function ResetPasswordContent() {
               <button
                 type="submit"
                 disabled={isLoading || password !== confirmPassword}
-                className={`w-full flex justify-center cursor-pointer items-center py-3.5 px-6 rounded-lg bg-indigo-600 text-white font-medium transition-all ${isLoading ? 'opacity-75' : 'hover:bg-indigo-700'
-                  } ${password !== confirmPassword ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full flex justify-center cursor-pointer items-center py-3.5 px-6 rounded-lg bg-indigo-600 text-white font-medium transition-all ${
+                  isLoading ? "opacity-75" : "hover:bg-indigo-700"
+                } ${password !== confirmPassword ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {isLoading ? (
                   <>
@@ -327,7 +308,10 @@ function ResetPasswordContent() {
           <motion.div variants={itemVariants} className="mt-10 pt-6 border-t border-gray-200 text-center">
             <h3 className="text-sm font-medium text-gray-600">Need help?</h3>
             <p className="text-sm text-gray-500 mt-1">
-              Contact our <Link href="/support" className="text-indigo-600 hover:text-indigo-500">support team</Link>
+              Contact our{" "}
+              <Link href="/support" className="text-indigo-600 hover:text-indigo-500">
+                support team
+              </Link>
             </p>
             <p className="text-xs text-gray-400 mt-1">We're here to assist you 24/7</p>
           </motion.div>
@@ -339,14 +323,16 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
-          <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Loading...</h2>
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+            <FiLoader className="animate-spin mx-auto text-indigo-600 text-4xl mb-4" />
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Loading...</h2>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   )
