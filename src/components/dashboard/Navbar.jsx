@@ -18,11 +18,11 @@ const Navbar = ({ user, isDarkMode }) => {
       </div>
       
       <div className="flex items-center space-x-4">
-        {user && (
-          <span className={`hidden md:inline text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-            {user.email}
-          </span>
-        )}
+        {/* {user && (
+          // <span className={`hidden md:inline text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+          //   {user.email}
+          // </span>
+        )} */}
         <LogoutButton isDarkMode={isDarkMode} />
       </div>
     </nav>

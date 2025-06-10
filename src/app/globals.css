@@ -27,21 +27,21 @@ body {
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #afafaf #3a3a3a;
+  scrollbar-color: #84b1fa #EFF5FF;
 }
 
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
-  width: 8px;
+  width: 2px;
 }
 
 *::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: #0063e6;
   border-radius: 4px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #94a3b8;
+  background-color: #1f406e;
   border-radius: 4px;
   border: 2px solid #e2e8f0;
 }
