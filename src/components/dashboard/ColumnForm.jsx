@@ -15,14 +15,14 @@ const ColumnForm = ({
 }) => {
   const [showCustomColorPicker, setShowCustomColorPicker] = useState(false)
   const [customColor, setCustomColor] = useState("#3b82f6") // Default blue color
-
+  
   const handleCustomColorSelect = () => {
     setColumnColor(customColor)
     setShowCustomColorPicker(false)
   }
-
+  
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="w-full">
       <div className="mb-4">
         <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
           Column Name
@@ -39,7 +39,7 @@ const ColumnForm = ({
           required
         />
       </div>
-
+      
       <div className="mb-2 md:mb-4">
         <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
           Color
@@ -49,18 +49,18 @@ const ColumnForm = ({
           <ColorPicker selectedColor={columnColor} onColorSelect={setColumnColor} />
           
           {/* Custom Color Circle */}
-          <div 
+          <div
             className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer"
             style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
             onClick={() => setShowCustomColorPicker(!showCustomColorPicker)}
           >
-            <div 
+            <div
               className="w-6 h-6 rounded-full"
               style={{ backgroundColor: customColor }}
             />
           </div>
         </div>
-
+        
         {/* Custom Color Picker */}
         {showCustomColorPicker && (
           <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }}>
@@ -79,8 +79,8 @@ const ColumnForm = ({
               type="button"
               onClick={handleCustomColorSelect}
               className={`px-3 py-1 text-sm rounded-md ${
-                isDarkMode 
-                  ? "bg-gray-600 hover:bg-gray-500 text-white" 
+                isDarkMode
+                  ? "bg-gray-600 hover:bg-gray-500 text-white"
                   : "bg-gray-200 hover:bg-gray-300 text-gray-800"
               }`}
             >
@@ -89,7 +89,7 @@ const ColumnForm = ({
           </div>
         )}
       </div>
-
+      
       <div className="flex justify-end">
         <button
           type="button"
@@ -113,4 +113,39 @@ const ColumnForm = ({
   )
 }
 
+// Column component with adaptive height
+const Column = ({ 
+  column, 
+  children, 
+  isDarkMode 
+}) => {
+  // Ensure the column container adapts to its content
+  return (
+    <div 
+      className={`flex flex-col h-auto rounded-md overflow-hidden ${
+        isDarkMode ? "bg-gray-800" : "bg-white"
+      }`}
+      style={{ 
+        borderLeft: `4px solid ${column.color || '#3b82f6'}`,
+        minHeight: "100px", // Minimum height to ensure visibility when empty
+      }}
+    >
+      {/* Column header */}
+      <div 
+        className={`p-3 font-medium border-b ${
+          isDarkMode ? "border-gray-700 text-gray-200" : "border-gray-200 text-gray-800"
+        }`}
+      >
+        {column.name}
+      </div>
+      
+      {/* Column content - will expand with items */}
+      <div className="flex-grow overflow-y-auto">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default ColumnForm
+export { Column }

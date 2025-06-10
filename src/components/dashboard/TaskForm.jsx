@@ -47,7 +47,7 @@ const TaskForm = ({
         </label>
         <textarea
           value={taskDescription}
-          maxLength={1000}
+          maxLength={2000}
           placeholder="e.g. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
           onChange={(e) => setTaskDescription(e.target.value)}
           className={`w-full px-3 py-2 ${
