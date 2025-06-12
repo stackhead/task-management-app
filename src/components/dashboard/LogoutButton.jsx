@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FiLogOut, FiLoader } from "react-icons/fi"
-import { account } from "@/components/services/appwrite"
+import { account } from "@/lib/appwrite"
 import { useRouter } from "next/navigation"
 
 const LogoutButton = ({ isDarkMode }) => {
@@ -24,8 +24,8 @@ const LogoutButton = ({ isDarkMode }) => {
     <button
       onClick={handleLogout}
       disabled={isLoading}
-      className={`flex items-center px-3 py-1.5 rounded-md ${
-        isDarkMode ? "bg-gray-800 text-gray-100 hover:bg-gray-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+      className={`flex items-center px-3 py-1 rounded-md ml-3 ${
+        isDarkMode ? "" : "bg-red-400 text-white hover:text-white hover:bg-red-600"
       } transition-colors cursor-pointer`}
     >
       {isLoading ? <FiLoader className="animate-spin mr-1" size={16} /> : <FiLogOut className="mr-1" size={16} />}

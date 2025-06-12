@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { databases, ID, DATABASE_ID, COLUMNS_COLLECTION_ID, TASKS_COLLECTION_ID } from "@/components/services/appwrite"
+import { databases, ID, DATABASE_ID, COLUMNS_COLLECTION_ID, TASKS_COLLECTION_ID } from "@/lib/appwrite"
 import { COLOR_OPTIONS } from "@/components/dashboard/ColorPicker"
 
 export function useColumnOperations({ user, columns, setColumns, tasks, setTasks, isDarkMode }) {

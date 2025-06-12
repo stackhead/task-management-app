@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { account } from "@/components/services/appwrite";
+import { account } from "@/lib/appwrite";
 import { useRouter } from "next/navigation";
 import LoginPage from "./auth/login/page";
 
