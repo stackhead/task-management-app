@@ -2,7 +2,7 @@
 
 import { FiEdit2, FiTrash2, FiPlus, FiMoreVertical, FiX } from "react-icons/fi"
 import { useDrop, useDrag } from "react-dnd"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Task from "./Task"
 
 const Column = ({
@@ -15,11 +15,14 @@ const Column = ({
   onDeleteColumn,
   onEditColumn,
   moveTask,
-  moveColumn, // New prop for column reordering
-  index, // Column index for reordering
+  moveColumn,
+  index,
   isNew = false,
   isDarkMode,
 }) => {
+  const columnRef = useRef(null)
+  const [columnHeight, setColumnHeight] = useState(0)
+
   // Drag and drop for tasks (only for the tasks container)
   const [{ isOver }, taskDropRef] = useDrop({
     accept: "TASK",
@@ -64,6 +67,21 @@ const Column = ({
     backgroundColor: isDarkMode ? `${columnColor}20` : `${columnColor}15`,
   }
 
+  // Calculate and update column height
+  useEffect(() => {
+    const updateColumnHeight = () => {
+      if (columnRef.current) {
+        const windowHeight = window.innerHeight
+        const columnTop = columnRef.current.getBoundingClientRect().top
+        const maxHeight = windowHeight - columnTop - 32 // 32px for padding/margins
+        setColumnHeight(maxHeight)
+      }
+    }
+
+    updateColumnHeight()
+    window.addEventListener('resize', updateColumnHeight)
+    return () => window.removeEventListener('resize', updateColumnHeight)
+  }, [])
   useEffect(() => {
     if (isNew) {
       const timer = setTimeout(() => {
@@ -129,7 +147,7 @@ const Column = ({
     <>
       <div
         ref={columnDropRef} // Only column drop zone on the entire column
-        className={`w-72 min-w-[18rem] flex-shrink-0 rounded-lg transition-all duration-300 flex flex-col 
+        className={` w-72 min-w-[18rem] flex-shrink-0 rounded-lg transition-all duration-300 flex flex-col 
     ${animate ? "animate-pulse" : ""}
     ${isDragging ? "opacity-50" : ""}
     shadow-sm h-fit`}

@@ -1,5 +1,4 @@
 "use client"
-
 import { useDrag } from "react-dnd"
 import { FiEdit2, FiTrash2, FiEye, FiClock, FiFlag } from "react-icons/fi"
 import { useState, useEffect } from "react"
@@ -14,16 +13,19 @@ export const PRIORITY_OPTIONS = [
 const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = false }) => {
   const [animate, setAnimate] = useState(isNew)
 
-  const [{ isDragging }, drag] = useDrag({
+  const [{ isDragging }, drag] = useDrag(() => ({
     type: "TASK",
     item: { id: task.$id, sourceColumnId: task.status },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-    options: {
-      dropEffect: "move",
+    end: (item, monitor) => {
+      const dropResult = monitor.getDropResult()
+      if (item && dropResult) {
+        moveTask(item.id, item.sourceColumnId, dropResult.targetColumnId)
+      }
     },
-  })
+  }))
 
   useEffect(() => {
     if (isNew) {
@@ -53,7 +55,7 @@ const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = fa
     <div
       ref={drag}
       className={`p-3 rounded-lg cursor-pointer transition-all duration-200 select-none ${
-        isDragging ? "opacity-50 rotate-2 scale-105" : "opacity-100"
+        isDragging ? "opacity-60 rotate-2 scale-90" : "opacity-100"
       } ${animate ? "animate-pulse" : ""} ${
         isDarkMode
           ? "bg-[#1F2937] border border-gray-700 hover:bg-[#374151] shadow-sm"
@@ -66,18 +68,10 @@ const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = fa
         MozUserSelect: "none",
         msUserSelect: "none",
       }}
-      onMouseDown={(e) => {
-        // Only prevent default for left mouse button to allow drag
-        if (e.button === 0) {
-          e.preventDefault()
-        }
-      }}
-      draggable="false"
     >
       <div className="flex justify-between items-start mb-2">
         <h3
           className={`font-medium text-sm ${isDarkMode ? "text-gray-100" : "text-gray-800"} line-clamp-2 select-none`}
-          draggable="false"
         >
           {task.title}
         </h3>
@@ -118,7 +112,6 @@ const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = fa
       {task.description && (
         <p
           className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"} mb-2 line-clamp-2 select-none`}
-          draggable="false"
         >
           {task.description}
         </p>
@@ -129,7 +122,7 @@ const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = fa
           {task.eta && (
             <div className={`flex items-center text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"} select-none`}>
               <FiClock size={10} className="mr-1" />
-              <span draggable="false">{formatDate(task.eta)}</span>
+              <span>{formatDate(task.eta)}</span>
             </div>
           )}
         </div>
@@ -141,10 +134,9 @@ const Task = ({ task, onDelete, onEdit, onView, moveTask, isDarkMode, isNew = fa
               backgroundColor: `${priorityOption.color}20`,
               color: priorityOption.color,
             }}
-            draggable="false"
           >
             <FiFlag size={10} className="mr-1" />
-            <span draggable="false">{priorityOption.label}</span>
+            <span>{priorityOption.label}</span>
           </div>
         </div>
       </div>

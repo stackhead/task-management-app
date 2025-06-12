@@ -8,26 +8,21 @@ import {
   COLUMNS_COLLECTION_ID,
   TASKS_COLLECTION_ID,
   Query,
-} from "@/lib/appwrite"
+} from "@/components/services/appwrite"
 
-export function useBoardState() {
+export function useKanbanBoard() {
   const [user, setUser] = useState(null)
   const [columns, setColumns] = useState([])
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  // Changed default to false (light mode)
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
 
   // Initialize theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem("kanban-theme")
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark")
-    } else {
-      // Set default to light mode if no saved preference
-      setIsDarkMode(false)
-      localStorage.setItem("kanban-theme", "light")
     }
   }, [])
 
@@ -86,7 +81,6 @@ export function useBoardState() {
     loading,
     error,
     isDarkMode,
-    setIsDarkMode,
     toggleTheme,
   }
 }

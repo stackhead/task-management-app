@@ -1,12 +1,12 @@
 "use client"
 
-import { FiSun, FiMoon } from "react-icons/fi"
+// import { FiSun, FiMoon } from "react-icons/fi"
 
 const Header = ({ toggleTheme, isDarkMode }) => {
   return (
     <div className="flex justify-between items-center md:p-4 max-md:p-2 ">
       <div>
-        <h1 className={`text-2xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>Task Pilot</h1>
+        <h1 className={` text-2xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>Task Pilot</h1>
         <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"} mt-1`}>
           Manage your tasks efficiently
         </p>

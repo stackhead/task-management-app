@@ -14,7 +14,6 @@ import LoadingState from "@/components/dashboard/LoadingState"
 import ErrorState from "@/components/dashboard/ErrorState"
 import EmptyState from "@/components/dashboard/EmptyState"
 import CustomScrollbarStyles from "@/components/dashboard/CustomScrollbarStyles"
-import Navbar from "@/components/dashboard/Navbar"
 import Header from "@/components/dashboard/Header"
 import AddColumnButton from "@/components/dashboard/AddColumnButton"
 import { useBoardState } from "@/components/dashboard/hooks/useBoardState"
@@ -149,7 +148,7 @@ export default function DashboardPage() {
       <CustomScrollbarStyles isDarkMode={isDarkMode} />
 
       <div className={`min-h-screen ${isDarkMode ? "bg-[#0D1117]" : "bg-gradient-to-br from-indigo-50 to-blue-50"}`}>
-        <Navbar user={user} isDarkMode={isDarkMode} />
+       
 
         <div className="" ref={containerRef}>
           <Header toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
