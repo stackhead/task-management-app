@@ -562,7 +562,7 @@ export const countryTelephoneCodes = [
   {
     name: "Korea, Democratic People's Republic of",
     code: "+850",
-    flag: "🇰🇵",
+    flag: "��🇵",
   },
   {
     name: "Korea, Republic of",
