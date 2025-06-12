@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { databases, ID, DATABASE_ID, PREFERENCES_COLLECTION_ID, Query } from "@/lib/appwrite"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { databases, DATABASE_ID, PREFERENCES_COLLECTION_ID, ID } from "@/lib/appwrite"
 
 const languages = [
   { value: "en", label: "English" },
@@ -53,6 +53,39 @@ const Preferences = ({ user }) => {
   })
 
   const [loading, setLoading] = useState(false)
+  const [preferencesDocId, setPreferencesDocId] = useState(null)
+
+  // Load existing preferences
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const response = await databases.listDocuments(DATABASE_ID, PREFERENCES_COLLECTION_ID, [
+          Query.equal("userId", user.$id),
+        ])
+
+        if (response.documents.length > 0) {
+          const userPrefs = response.documents[0]
+          setPreferencesDocId(userPrefs.$id)
+          setPreferences({
+            language: userPrefs.language || "en",
+            timeZone: userPrefs.timeZone || "GMT+05:00",
+            theme: userPrefs.theme || "light",
+            dateFormat: userPrefs.dateFormat || "31 Dec 2025",
+            timeFormat: userPrefs.timeFormat || "12 hours: 9:00 PM",
+            weekFormat: userPrefs.weekFormat || "Monday",
+            showOrgTasks: userPrefs.showOrgTasks ?? true,
+            browserNotifications: userPrefs.browserNotifications ?? false,
+          })
+        }
+      } catch (error) {
+        console.error("Error loading preferences:", error)
+      }
+    }
+
+    if (user) {
+      loadPreferences()
+    }
+  }, [user])
 
   const handleSelectChange = (key, value) => {
     setPreferences((prev) => ({
@@ -77,8 +110,19 @@ const Preferences = ({ user }) => {
         ...preferences,
       }
 
-      // Save to Appwrite
-      await databases.createDocument(DATABASE_ID, PREFERENCES_COLLECTION_ID, ID.unique(), preferencesData)
+      if (preferencesDocId) {
+        // Update existing preferences
+        await databases.updateDocument(DATABASE_ID, PREFERENCES_COLLECTION_ID, preferencesDocId, preferencesData)
+      } else {
+        // Create new preferences document
+        const result = await databases.createDocument(
+          DATABASE_ID,
+          PREFERENCES_COLLECTION_ID,
+          ID.unique(),
+          preferencesData,
+        )
+        setPreferencesDocId(result.$id)
+      }
 
       toast.success("Preferences updated", {
         description: "Your preferences have been saved.",
@@ -124,9 +168,9 @@ const Preferences = ({ user }) => {
     <div className="max-w-2xl space-y-8">
       {/* Language */}
       <div>
-        <Label className="text-sm text-gray-600 mb-2 block">Language</Label>
+        <Label className="text-sm text-gray-600 mb-2  block">Language</Label>
         <Select value={preferences.language} onValueChange={(value) => handleSelectChange("language", value)}>
-          <SelectTrigger className="w-64 bg-white border-gray-300">
+          <SelectTrigger className="w-64 bg-white border-gray-300 cursor-pointer">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-white border-gray-200">
@@ -143,7 +187,7 @@ const Preferences = ({ user }) => {
       <div>
         <Label className="text-sm text-gray-600 mb-2 block">Time zone</Label>
         <Select value={preferences.timeZone} onValueChange={(value) => handleSelectChange("timeZone", value)}>
-          <SelectTrigger className="w-64 bg-white border-gray-300">
+          <SelectTrigger className="w-64 bg-white border-gray-300 cursor-pointer">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-white border-gray-200">
@@ -160,7 +204,7 @@ const Preferences = ({ user }) => {
       <div>
         <Label className="text-sm text-gray-600 mb-2 block">Theme</Label>
         <Select value={preferences.theme} onValueChange={(value) => handleSelectChange("theme", value)}>
-          <SelectTrigger className="w-64 bg-white border-gray-300">
+          <SelectTrigger className="w-64 bg-white border-gray-300 cursor-pointer">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-white border-gray-200">
@@ -175,11 +219,11 @@ const Preferences = ({ user }) => {
 
       {/* Date format */}
       <div>
-        <Label className="text-sm text-gray-600 mb-3 block">Date format</Label>
-        <div className="flex space-x-4">
+        <Label className="text-sm text-gray-600 mb-3 block ">Date format</Label>
+        <div className="flex space-x-4 ">
           <button
             onClick={() => handleSelectChange("dateFormat", "31 Dec 2025")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.dateFormat === "31 Dec 2025"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -189,7 +233,7 @@ const Preferences = ({ user }) => {
           </button>
           <button
             onClick={() => handleSelectChange("dateFormat", "Dec 31, 2025")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.dateFormat === "Dec 31, 2025"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -206,7 +250,7 @@ const Preferences = ({ user }) => {
         <div className="flex space-x-4">
           <button
             onClick={() => handleSelectChange("timeFormat", "12 hours: 9:00 PM")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.timeFormat === "12 hours: 9:00 PM"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -216,7 +260,7 @@ const Preferences = ({ user }) => {
           </button>
           <button
             onClick={() => handleSelectChange("timeFormat", "24 hours: 21:00")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.timeFormat === "24 hours: 21:00"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -233,7 +277,7 @@ const Preferences = ({ user }) => {
         <div className="flex space-x-4">
           <button
             onClick={() => handleSelectChange("weekFormat", "Monday")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.weekFormat === "Monday"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -243,7 +287,7 @@ const Preferences = ({ user }) => {
           </button>
           <button
             onClick={() => handleSelectChange("weekFormat", "Sunday")}
-            className={`px-4 py-2 rounded-md border text-sm ${
+            className={`px-4 py-2 rounded-md border text-sm cursor-pointer ${
               preferences.weekFormat === "Sunday"
                 ? "bg-blue-100 border-blue-300 text-blue-700"
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -255,12 +299,12 @@ const Preferences = ({ user }) => {
       </div>
 
       {/* Organization tasks checkbox */}
-      <div className="flex items-start space-x-3">
+      <div className="flex items-start space-x-3 ">
         <Checkbox
           id="org-tasks"
           checked={preferences.showOrgTasks}
           onCheckedChange={(checked) => handleCheckboxChange("showOrgTasks", checked)}
-          className="mt-1 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+          className="mt-1 cursor-pointer data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
         />
         <Label htmlFor="org-tasks" className="text-sm text-gray-700 leading-relaxed">
           Show all tasks assigned to me within the organizations in My Workspace
@@ -280,7 +324,7 @@ const Preferences = ({ user }) => {
             <p className="text-sm text-gray-600 mb-4">Browser notifications are turned off</p>
             <Button
               onClick={handleEnableNotifications}
-              className="bg-blue-600 text-white hover:bg-blue-700 border-0 mb-4"
+              className="bg-blue-600 cursor-pointer text-white hover:bg-blue-700 border-0 mb-4"
             >
               Enable notifications
             </Button>
@@ -300,7 +344,7 @@ const Preferences = ({ user }) => {
         <Button
           onClick={handleSavePreferences}
           disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded-md text-sm hover:bg-blue-700 border-0"
+          className="bg-blue-600 cursor-pointer text-white px-6 py-2 rounded-md text-sm hover:bg-blue-700 border-0"
         >
           {loading ? "Saving..." : "Save Preferences"}
         </Button>
